@@ -1,0 +1,10 @@
+exclude_dirs:
+  - .git
+  - __pycache__
+  - .mypy_cache
+  - venv
+  - .venv
+  - .env
+  - env
+  - build
+  - dist

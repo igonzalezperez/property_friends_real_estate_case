@@ -1,0 +1,21 @@
+[flake8]
+max-line-length = 88
+
+# Exclude virtual environment directories and cache directories
+exclude =
+    .git,
+    __pycache__,
+    .mypy_cache,
+    venv,
+    .venv,
+    .env,
+    env,
+    build,
+    dist,
+    old
+
+# Ignore specific errors and warnings that are less relevant for ML projects
+# E501: line too long (handled by max-line-length)
+# W503: line break before binary operator (conflicts with W504)
+# E203: whitespace before ':' (not PEP8 compliant, conflicts with black)
+ignore = E501, W503, E203
