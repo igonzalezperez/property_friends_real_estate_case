@@ -1,0 +1,10 @@
+{
+    "type": "departamento",
+    "sector": "vitacura",
+    "net_usable_area": 143.0,
+    "net_area": 165.0,
+    "n_rooms": 3.0,
+    "n_bathroom": 4.0,
+    "latitude": -33.40251,
+    "longitude": -70.6610
+}
