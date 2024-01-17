@@ -1,4 +1,4 @@
-import numpy as np
+import pandas as pd
 
 from pydantic import BaseModel
 
@@ -12,21 +12,24 @@ class HealthResponse(BaseModel):
 
 
 class MachineLearningDataInput(BaseModel):
-    feature1: float
-    feature2: float
-    feature3: float
-    feature4: float
-    feature5: float
+    type: str
+    sector: str
+    net_usable_area: float
+    net_area: float
+    n_rooms: float
+    n_bathroom: float
+    latitude: float
+    longitude: float
 
-    def get_np_array(self):
-        return np.array(
-            [
-                [
-                    self.feature1,
-                    self.feature2,
-                    self.feature3,
-                    self.feature4,
-                    self.feature5,
-                ]
-            ]
-        )
+    def get_df(self):
+        data = {
+            "type": [self.type],
+            "sector": [self.sector],
+            "net_usable_area": [self.net_usable_area],
+            "net_area": [self.net_area],
+            "n_rooms": [self.n_rooms],
+            "n_bathroom": [self.n_bathroom],
+            "latitude": [self.latitude],
+            "longitude": [self.longitude],
+        }
+        return pd.DataFrame(data)
