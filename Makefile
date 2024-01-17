@@ -12,7 +12,7 @@ MODEL_PATH := ./ml/model/
 endif
 
 ifeq ($(MODEL_NAME),)
-MODEL_NAME := model.pkl
+MODEL_NAME := model.joblib
 endif
 
 # Target section and Global definitions
