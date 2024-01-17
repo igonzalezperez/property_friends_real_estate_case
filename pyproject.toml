@@ -17,6 +17,7 @@ pydantic = "^2.0.0"
 requests = "^2.22.0"
 loguru = "^0.7.0"
 joblib = "^1.2.0"
+python-dotenv = "^1.0.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.12.1"
