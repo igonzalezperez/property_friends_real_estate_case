@@ -1,4 +1,4 @@
-version: "3"
+version: "3.8"
 
 services:
   app:
@@ -10,7 +10,8 @@ services:
       - "8080:8080"
     env_file:
       - .env
-    command: uvicorn main:app --reload --host 0.0.0.0 --port 8080
     volumes:
-      - ./app:/app/
-      - ./ml/model/:/app/ml/model/
+      - ./app:/real-estate-price-prediction/app
+      - ./ml/model/:/real-estate-price-prediction/ml/model
+      - ./ml/data/examples/:/real-estate-price-prediction/ml/data/examples
+    working_dir: /real-estate-price-prediction
