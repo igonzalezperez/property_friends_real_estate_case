@@ -1,0 +1,6 @@
+[scheduler]
+record_task_history = True
+state_path = /logs/luigi-state.pickle
+
+[task_history]
+db_connection = sqlite:////logs/luigi-task-hist.db
