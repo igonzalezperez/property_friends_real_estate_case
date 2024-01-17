@@ -1,9 +1,9 @@
 import os
-
+from pathlib import Path
 from loguru import logger
 
-from core.errors import PredictException, ModelLoadException
-from core.config import MODEL_NAME, MODEL_PATH
+from app.core.errors import PredictException, ModelLoadException
+from app.core.config import ML_MODELS_DIR, MODEL_NAME
 
 
 class MachineLearningModelHandlerScore(object):
@@ -25,10 +25,7 @@ class MachineLearningModelHandlerScore(object):
     @staticmethod
     def load(load_wrapper):
         model = None
-        if MODEL_PATH.endswith("/"):
-            path = f"{MODEL_PATH}{MODEL_NAME}"
-        else:
-            path = f"{MODEL_PATH}/{MODEL_NAME}"
+        path = Path(ML_MODELS_DIR, MODEL_NAME)
         if not os.path.exists(path):
             message = f"Machine learning model at {path} not exists!"
             logger.error(message)
@@ -38,4 +35,6 @@ class MachineLearningModelHandlerScore(object):
             message = f"Model {model} could not load!"
             logger.error(message)
             raise ModelLoadException(message)
+
+        logger.info(f"Succesfully loaded model: {Path(path).resolve()}")
         return model
