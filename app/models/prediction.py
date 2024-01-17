@@ -3,7 +3,7 @@ import pandas as pd
 from pydantic import BaseModel
 
 
-class MachineLearningResponse(BaseModel):
+class ModelResponse(BaseModel):
     prediction: float
 
 
@@ -11,7 +11,7 @@ class HealthResponse(BaseModel):
     status: bool
 
 
-class MachineLearningDataInput(BaseModel):
+class ModelInput(BaseModel):
     type: str
     sector: str
     net_usable_area: float

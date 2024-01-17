@@ -7,10 +7,10 @@ def preload_model():
     """
     In order to load model on memory to each worker
     """
-    from app.services.predict import MachineLearningModelHandlerScore
+    from app.services.predict import ModelHandlerScore
     from joblib import load
 
-    MachineLearningModelHandlerScore.get_model(load_wrapper=load)
+    ModelHandlerScore.get_model(load_wrapper=load)
 
 
 def create_start_app_handler(app: FastAPI) -> Callable:

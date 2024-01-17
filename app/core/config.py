@@ -35,7 +35,7 @@ current_dir = os.path.dirname(__file__)
 ML_DIR = os.path.abspath(os.path.join(current_dir, "../../ml"))
 
 # Access files and folders within the 'ml' directory
-ML_MODELS_DIR = os.path.join(ML_DIR, "model")
+ML_MODELS_DIR = os.path.join(ML_DIR, "models")
 ML_DATA_DIR = os.path.join(ML_DIR, "data")
 
 INPUT_EXAMPLE = str(Path(ML_DATA_DIR, "examples", "example.json"))

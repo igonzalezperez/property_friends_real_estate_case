@@ -6,7 +6,7 @@ from app.core.errors import PredictException, ModelLoadException
 from app.core.config import ML_MODELS_DIR, MODEL_NAME
 
 
-class MachineLearningModelHandlerScore(object):
+class ModelHandlerScore(object):
     model = None
 
     @classmethod
