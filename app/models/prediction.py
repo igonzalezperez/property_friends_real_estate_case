@@ -3,16 +3,14 @@ This module defines the data models used in the application. Namely the
 model input features, model response (target) and a health check response.
 """
 
-import numpy as np
 import pandas as pd
-from numpy.typing import NDArray
 from pydantic import BaseModel
 
 
 class ModelResponse(BaseModel):
     """Response model for the prediction endpoint."""
 
-    prediction: NDArray[np.float64]
+    prediction: float
 
 
 class HealthResponse(BaseModel):
