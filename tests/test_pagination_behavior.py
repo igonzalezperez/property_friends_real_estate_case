@@ -3,7 +3,7 @@ In order to test behavior of pagination function
 """
 import pytest
 
-from app.core.paginator import pagination
+from app.core.paginator import pagination, InvalidPageNumberError
 
 
 def test_pagination_400_initial_default() -> None:
@@ -53,5 +53,5 @@ def test_pagination_400_set_start_1_equals_true_and_init_as_pagenumber_as_0() ->
     Test pagination function behavior with 400 total items, starting from
     page 0, and 'start_page_as_1' set to True.
     """
-    with pytest.raises(Exception, match=r".* starts > 0. *"):
+    with pytest.raises(InvalidPageNumberError, match=r".* start > 0. *"):
         _ = pagination(0, 20, 400, list(range(400)))

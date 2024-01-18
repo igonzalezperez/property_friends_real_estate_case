@@ -59,7 +59,10 @@ async def predict(
     :return ModelResponse: The prediction results.
     """
     if not data_input:
-        raise HTTPException(status_code=404, detail="'data_input' argument invalid!")
+        raise HTTPException(
+            status_code=404,
+            detail="'data_input' argument invalid!",
+        )
     try:
         data_point = data_input.get_df()
         prediction = get_prediction(data_point)
