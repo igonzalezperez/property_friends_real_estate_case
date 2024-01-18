@@ -13,4 +13,7 @@ services:
     volumes:
       - ./app:/real-estate-price-prediction/app
       - ./ml:/real-estate-price-prediction/ml
+      - ./config:/real-estate-price-prediction/config
+      - ./Makefile:/real-estate-price-prediction/Makefile
+      - ./luigi.toml:/real-estate-price-prediction/luigi.toml
     working_dir: /real-estate-price-prediction

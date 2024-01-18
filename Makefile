@@ -34,16 +34,17 @@ ci-format:
 	poetry run black --check . --exclude .venv/
 
 ci-lint:
-	find . -name '*.py' ! -name '__init__.py' -exec poetry run flake8 {} \;
-	find . -name '*.py' ! -name '__init__.py' -exec poetry run pylint {} \;
-	poetry run mypy .
+	find . -name '*.py' ! -name '__init__.py' -exec poetry run flake8 --config=config/.flake8 {} \;
+	find . -name '*.py' ! -name '__init__.py' -exec poetry run pylint --rcfile=config/.pylintrc {} \;
+	poetry run mypy --config-file=config/mypy.ini .
 
 ci-security:
-	poetry run bandit -c .bandit.yml -r .
+	poetry run bandit -c config/.bandit.yml -r .
 
-# New target to run the entire CI pipeline
 ci-pipeline: ci-format ci-lint ci-security
 
+data-pipeline:
+	poetry run python ml/pipelines/luigi_tasks.py
 run:
 	PYTHONPATH=app/ poetry run uvicorn main:app --reload --host 0.0.0.0 --port 8080
 
