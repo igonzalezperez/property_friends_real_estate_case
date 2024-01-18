@@ -12,6 +12,5 @@ services:
       - .env
     volumes:
       - ./app:/real-estate-price-prediction/app
-      - ./ml/model/:/real-estate-price-prediction/ml/model
-      - ./ml/data/examples/:/real-estate-price-prediction/ml/data/examples
+      - ./ml:/real-estate-price-prediction/ml
     working_dir: /real-estate-price-prediction
