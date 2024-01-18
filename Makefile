@@ -17,7 +17,7 @@ endif
 
 # Target section and Global definitions
 # -----------------------------------------------------------------------------
-.PHONY: all clean test install run deploy down
+.PHONY: all clean test install run deploy down ci-pipeline
 
 all: clean test install run deploy down
 
@@ -28,6 +28,21 @@ install: generate_dot_env
 	pip install --upgrade pip
 	pip install poetry
 	poetry install --with dev
+
+ci-format:
+	poetry run isort . --profile black --check-only
+	poetry run black --check . --exclude .venv/
+
+ci-lint:
+	find . -name '*.py' ! -name '__init__.py' -exec poetry run flake8 {} \;
+	find . -name '*.py' ! -name '__init__.py' -exec poetry run pylint {} \;
+	poetry run mypy .
+
+ci-security:
+	poetry run bandit -c .bandit.yml -r .
+
+# New target to run the entire CI pipeline
+ci-pipeline: ci-format ci-lint ci-security
 
 run:
 	PYTHONPATH=app/ poetry run uvicorn main:app --reload --host 0.0.0.0 --port 8080

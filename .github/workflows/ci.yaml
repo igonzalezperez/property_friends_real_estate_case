@@ -19,6 +19,9 @@ jobs:
       - name: Install dependencies
         run: |
           make install
+      - name: Format and lint
+        run: |
+          make ci-pipeline
       - name: Test with pytest
         run: |
           make test
