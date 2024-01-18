@@ -45,3 +45,20 @@ def save_to_json(
         # If the file does not exist, create it and write the new data
         with open(file_path, "w", encoding="utf-8") as stream:
             json.dump([new_data], stream, indent=4)
+
+
+def read_log_entries(limit: int) -> list[dict]:
+    """
+    Read and return a list of log entries from the JSON log file.
+
+    :param int limit: The maximum number of log entries to retrieve.
+    :return list[dict]: A list of log entries as dictionaries.
+    """
+    try:
+        with open("app/log/model_predictions.json", "r") as log_file:
+            log_data = json.load(log_file)
+        # Reverse the log entries to show the most recent ones first
+        log_data.reverse()
+        return log_data[: min(limit, len(log_data))]
+    except FileNotFoundError:
+        return []

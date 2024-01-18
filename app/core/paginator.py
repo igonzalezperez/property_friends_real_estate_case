@@ -15,7 +15,7 @@ class InvalidPageNumberError(Exception):
 
     def __init__(self) -> None:
         super().__init__(
-            """Page number must start > 0. 
+            """Page number must start > 0.
             Cause: start_page_as_1=True and page_number defined as <= 0"""
         )
 

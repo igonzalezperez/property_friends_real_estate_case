@@ -12,16 +12,22 @@ import typing
 import joblib
 import numpy as np
 import pandas as pd
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from numpy.typing import NDArray
 
 from app.core.config import INPUT_EXAMPLE
 from app.core.middleware.api_key_middleware import token_auth_scheme
-from app.core.monitoring import save_to_json
-from app.models.prediction import HealthResponse, ModelInput, ModelResponse
+from app.core.monitoring import save_to_json, read_log_entries
+from app.models.prediction import (
+    HealthResponse,
+    ModelInput,
+    ModelResponse,
+    PredictLogEntry,
+)
 from app.services.predict import ModelHandlerScore as model
 
 router = APIRouter()
+log_router = APIRouter()
 
 
 @typing.no_type_check
@@ -40,28 +46,35 @@ def get_prediction(data_point: pd.DataFrame) -> NDArray[np.float64]:
 @router.post(
     "/predict",
     response_model=ModelResponse,
-    name="predict:get-data",
+    name="predict:get-inference",
     dependencies=[Depends(token_auth_scheme)],  # api token authentication
 )
 async def predict(
     data_input: ModelInput, background_tasks: BackgroundTasks
 ) -> ModelResponse:
-    """Get predictions for the input data.
+    """
+    **Get predictions for the input data**
 
     This endpoint receives a ModelInput object and performs predictions on it.
     The payload and response fields are defined by ModelInput and ModelResponse
 
-    :param ModelInput data_input: The input data point for prediction.
-    :param BackgroundTasks background_tasks: A background task for saving
+    **Input**
+    - `data_input` (InputData): The input data for prediction.
+    - `background_tasks` (BackgroundTasks): A background task for saving
     prediction results.
-    :raises HTTPException: If the 'data_input' argument is invalid.
-    :raises HTTPException: If an exception occurs during prediction.
-    :return ModelResponse: The prediction results.
+
+    **Output**
+    - `ModelResponse`: The prediction results.
+
+    **Raises**
+    - `HTTPException 400`: If the 'data_input' argument is invalid.
+    - `HTTPException 500`: The prediction results.
+
     """
     if not data_input:
         raise HTTPException(
-            status_code=404,
-            detail="'data_input' argument invalid!",
+            status_code=400,
+            detail="Bad request",
         )
     try:
         data_point = data_input.get_df()
@@ -84,13 +97,17 @@ async def predict(
 )
 async def health() -> HealthResponse:
     """
+    **Health Check API**
+
     Check the health status of the API.
 
-    This endpoint performs a health check to ensure that the API is running
-    properly. It runs a prediction on example data.
+    This endpoint performs a health check to ensure that the API is running properly.
 
-    :raises HTTPException: If the health check fails.
-    :return HealthResponse: The health status of the API.
+    **Output**
+    - `HealthResponse`: The health status of the API.
+
+    **Raises**
+    - `HTTPException 503`: If the health check fails.
     """
     is_health = False
     try:
@@ -102,4 +119,35 @@ async def health() -> HealthResponse:
         is_health = True
         return HealthResponse(status=is_health)
     except Exception as exc:
-        raise HTTPException(status_code=404, detail="Unhealthy") from exc
+        raise HTTPException(status_code=503, detail="Service unavailable") from exc
+
+
+@log_router.get(
+    "/log",
+    response_model=list[PredictLogEntry],
+    name="log:get-data",
+    dependencies=[Depends(token_auth_scheme)],  # api token authentication
+)
+async def get_log_entries(
+    limit: int = Query(
+        default=10,
+        description="Number of log entries to retrieve",
+    )
+) -> list[PredictLogEntry]:
+    """
+    **Prediction Logs API**
+
+    Get predict inputs and output entries.
+
+    This endpoint retrieves the latest log entries from a JSON file and returns
+    them as a list.
+
+    **Input**
+    - `limit` (int): The maximum number of log entries to retrieve
+    (default: 10).
+
+    **Output**
+    - `list[PredictLogEntry]`: A list of log entries as dictionaries.
+    """
+    log_entries = read_log_entries(limit)
+    return log_entries
