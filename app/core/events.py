@@ -1,19 +1,25 @@
-from typing import Callable
+"""
+Module for handling model preloading and startup handling in FastAPI.
+"""
+import typing
 
 from fastapi import FastAPI
+from joblib import load
+
+from app.services.predict import ModelHandlerScore
 
 
+@typing.no_type_check
 def preload_model():
-    """
-    In order to load model on memory to each worker
-    """
-    from app.services.predict import ModelHandlerScore
-    from joblib import load
-
+    """Load the model into memory for each worker."""
     ModelHandlerScore.get_model(load_wrapper=load)
 
 
-def create_start_app_handler(app: FastAPI) -> Callable:
+@typing.no_type_check
+def create_start_app_handler(app: FastAPI):
+    # pylint: disable=unused-argument
+    """Create a startup handler function for FastAPI application."""
+
     def start_app() -> None:
         preload_model()
 

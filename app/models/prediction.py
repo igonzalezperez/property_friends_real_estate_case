@@ -1,17 +1,29 @@
-import pandas as pd
+"""
+This module defines the data models used in the application. Namely the
+model input features, model response (target) and a health check response.
+"""
 
+import numpy as np
+import pandas as pd
+from numpy.typing import NDArray
 from pydantic import BaseModel
 
 
 class ModelResponse(BaseModel):
-    prediction: float
+    """Response model for the prediction endpoint."""
+
+    prediction: NDArray[np.float64]
 
 
 class HealthResponse(BaseModel):
+    """Response model for the health endpoint."""
+
     status: bool
 
 
 class ModelInput(BaseModel):
+    """Input model for the prediction endpoint."""
+
     type: str
     sector: str
     net_usable_area: float
@@ -21,7 +33,8 @@ class ModelInput(BaseModel):
     latitude: float
     longitude: float
 
-    def get_df(self):
+    def get_df(self) -> pd.DataFrame:
+        """Converts the input data to a Pandas DataFrame."""
         data = {
             "type": [self.type],
             "sector": [self.sector],

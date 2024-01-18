@@ -1,29 +1,38 @@
-import pandas as pd
-import numpy as np
-import json
+"""
+Utility for Saving Data to Text File
+"""
 import datetime
+import json
+
+import numpy as np
+import pandas as pd
+from numpy.typing import NDArray
 
 
-def save_to_text(input: pd.DataFrame, result: np.array) -> None:
+def save_to_json(
+    data_input: pd.DataFrame,
+    result: NDArray[np.float64],
+) -> None:
     """
-    Saves input/output dicts to bigquery
+    Save input and output data to a json file. A single json file is used
+    and new data is appended to the end to log each api call.
+
+    :param pd.DataFrame data_input: The input data to be saved.
+    :param NDArray[np.float64] result: The result data to be saved.
     """
     file_path = "app/log/model_predictions.json"
     new_data = {
-        "input": input.to_dict(orient="records"),
+        "input": data_input.to_dict(orient="records"),
         "result": result[0],
         "date": f"{datetime.datetime.now():%Y-%m-%d %H:%M:%S.%f}",
     }
     try:
-        with open(file_path, "r+") as stream:
-            # Load existing data
+        with open(file_path, "r+", encoding="utf-8") as stream:
             try:
                 data = json.load(stream)
                 if not isinstance(data, list):
-                    # If data is not a list, make it a list
                     data = [data]
             except json.JSONDecodeError:
-                # If the file is empty and causing JSONDecodeError, start a new list
                 data = []
 
             # Append new data and write back to file
@@ -34,5 +43,5 @@ def save_to_text(input: pd.DataFrame, result: np.array) -> None:
 
     except FileNotFoundError:
         # If the file does not exist, create it and write the new data
-        with open(file_path, "w") as stream:
+        with open(file_path, "w", encoding="utf-8") as stream:
             json.dump([new_data], stream, indent=4)

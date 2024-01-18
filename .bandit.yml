@@ -8,3 +8,5 @@ exclude_dirs:
   - env
   - build
   - dist
+
+skips: ['B101']  # Ignore use of assert

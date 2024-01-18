@@ -1,39 +1,67 @@
+"""
+Data Processing Pipeline with Luigi
+
+This module defines a data processing pipeline using Luigi, a Python library
+for building complex data pipelines.
+The pipeline consists of three tasks: MakeDataset, BuildFeatures, and
+TrainModel, which are executed in sequence.
+
+Tasks:
+- MakeDataset: Reads raw data and saves it as a processed dataset.
+- BuildFeatures: Performs feature engineering on the dataset and saves a
+preprocessing pipeline.
+- TrainModel: Trains a machine learning model using the preprocessed dataset
+and saves the trained model.
+
+Usage:
+To run the pipeline, execute this module. For example:
+    (poetry run) python module_name.py
+
+Note: You can customize the input/output directories and other parameters in
+this script as needed.
+"""
+from pathlib import Path
+
 import luigi
 import pandas as pd
-from pathlib import Path
-import luigi
-import pandas as pd
-from pathlib import Path
 from category_encoders import TargetEncoder
-from sklearn.pipeline import Pipeline
-from sklearn.compose import ColumnTransformer
 from joblib import dump
-import luigi
-import pandas as pd
-from pathlib import Path
-from sklearn.ensemble import GradientBoostingRegressor
-from joblib import dump, load
 from loguru import logger
-import os
+from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.pipeline import Pipeline
 
-raw_data_folder = "ml/data/raw"
-interim_data_folder = "ml/data/interim"
-models_folder = "ml/models"
+RAW_DATA_FOLDER = "ml/data/raw"
+INTERIM_DATA_FOLDER = "ml/data/interim"
+MODELS_FOLDER = "ml/models"
 
-input_data_file = "train.csv"
-preproc_pipeline_file = "preproc_pipeline.joblib"
-model_file = "model.joblib"
+INPUT_DATA_FILE = "train.csv"
+PREPROC_PIPELINE_FILE = "preproc_pipeline.joblib"
+MODEL_FILE = "model.joblib"
 
 
-class MakeDataset(luigi.Task):
-    input_dir = luigi.Parameter(default=raw_data_folder)
-    output_dir = luigi.Parameter(default=interim_data_folder)
+class MakeDataset(luigi.Task):  # type: ignore[misc]
+    """
+    Luigi task for creating the dataset from raw files.
+    """
 
-    def output(self):
-        return luigi.LocalTarget(Path(self.output_dir, input_data_file))
+    input_dir = luigi.Parameter(default=RAW_DATA_FOLDER)
+    output_dir = luigi.Parameter(default=INTERIM_DATA_FOLDER)
 
-    def run(self):
-        data_in_path = Path(self.input_dir, input_data_file)
+    def output(self) -> luigi.LocalTarget:
+        """
+        Define task output.
+
+        :return luigi.LocalTarget: Target where output data will be saved
+        """
+        return luigi.LocalTarget(Path(self.output_dir, INPUT_DATA_FILE))
+
+    def run(self) -> None:
+        """
+        Run task logic. Read data from input, clean it and prepareit, then
+        save it.
+        """
+        data_in_path = Path(self.input_dir, INPUT_DATA_FILE)
         data_out_path = self.output().path
 
         logger.info(f"Reading data from {data_in_path}")
@@ -44,18 +72,40 @@ class MakeDataset(luigi.Task):
         logger.success("MakeDataset process ran successfully")
 
 
-class BuildFeatures(luigi.Task):
-    input_data_dir = luigi.Parameter(default=interim_data_folder)
-    output_model_dir = luigi.Parameter(default=models_folder)
+class BuildFeatures(luigi.Task):  # type: ignore[misc]
+    """
+    Luigi task for creating data features.
+    """
 
-    def requires(self):
+    input_data_dir = luigi.Parameter(default=INTERIM_DATA_FOLDER)
+    output_model_dir = luigi.Parameter(default=MODELS_FOLDER)
+
+    def requires(self) -> MakeDataset:
+        """
+        Required task to run before this one
+
+        :return MakeDataset: MakeDataset task
+        """
         return MakeDataset()
 
-    def output(self):
-        return luigi.LocalTarget(Path(self.output_model_dir, preproc_pipeline_file))
+    def output(self) -> luigi.LocalTarget:
+        """
+        Define task output.
 
-    def run(self):
-        data_path = Path(self.input_data_dir, input_data_file)
+        :return luigi.LocalTarget: Target where output data will be saved
+        """
+        return luigi.LocalTarget(
+            Path(
+                self.output_model_dir,
+                PREPROC_PIPELINE_FILE,
+            )
+        )
+
+    def run(self) -> None:
+        """
+        Run task logic. Preprocess model features then save data and artifacts
+        """
+        data_path = Path(self.input_data_dir, INPUT_DATA_FILE)
 
         logger.info(f"Reading data from: {data_path}")
         data = pd.read_csv(data_path)
@@ -80,20 +130,38 @@ class BuildFeatures(luigi.Task):
         logger.success("BuildFeatures process ran successfully")
 
 
-class TrainModel(luigi.Task):
-    input_data_dir = luigi.Parameter(default=interim_data_folder)
-    input_model_dir = luigi.Parameter(default=models_folder)
-    output_model_dir = luigi.Parameter(default=models_folder)
+class TrainModel(luigi.Task):  # type: ignore[misc]
+    """
+    Luigi task for training predictive model.
+    """
 
-    def requires(self):
+    input_data_dir = luigi.Parameter(default=INTERIM_DATA_FOLDER)
+    input_model_dir = luigi.Parameter(default=MODELS_FOLDER)
+    output_model_dir = luigi.Parameter(default=MODELS_FOLDER)
+
+    def requires(self) -> MakeDataset:
+        """
+        Required task to run before this one
+
+        :return MakeDataset: MakeDataset task
+        """
         return MakeDataset()
 
-    def output(self):
-        return luigi.LocalTarget(Path(self.output_model_dir, model_file))
+    def output(self) -> luigi.LocalTarget:
+        """
+        Define task output.
 
-    def run(self):
-        data_path = Path(self.input_data_dir, input_data_file)
-        preproc_path = Path(self.input_model_dir, preproc_pipeline_file)
+        :return luigi.LocalTarget: Target where output data will be saved
+        """
+        return luigi.LocalTarget(Path(self.output_model_dir, MODEL_FILE))
+
+    def run(self) -> None:
+        """
+        Run task logic. Read data from input, train model, then
+        save it.
+        """
+        data_path = Path(self.input_data_dir, INPUT_DATA_FILE)
+        preproc_path = Path(self.input_model_dir, PREPROC_PIPELINE_FILE)
 
         logger.info(f"Reading data from: {data_path}")
         logger.info(f"Reading preprocessing pipeline from: {preproc_path}")
@@ -136,4 +204,5 @@ class TrainModel(luigi.Task):
 
 
 if __name__ == "__main__":
+    # Run all tasks, considering TrainModel requires previous tasks
     luigi.run(["TrainModel", "--local-scheduler"])

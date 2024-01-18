@@ -1,13 +1,39 @@
-import sys
+"""
+Configuration and setup for the FastAPI application.
+
+This module handles configuration settings through environment variables,
+logging setup, and paths for the FastAPI application.
+
+Attributes:
+    API_PREFIX (str): The API prefix for the application.
+    VERSION (str): The version of the application.
+    DEBUG (bool): A flag indicating whether the application is in debug mode.
+    PRE_LOAD (bool): A flag indicating whether pre-loading is enabled.
+    MAX_CONNECTIONS_COUNT (int): The maximum number of connections allowed.
+    MIN_CONNECTIONS_COUNT (int): The minimum number of connections required.
+    CLIENT_API_KEY (Secret): The client API key for authentication.
+    PROJECT_NAME (str): The name of the FastAPI project.
+    MODEL_NAME (str): The default name for the machine learning model.
+
+    LOGGING_LEVEL (int): The logging level for the application.
+    logger (Logger): The logger instance for the application.
+    ML_DIR (str): The path to the 'ml' directory.
+    ML_MODELS_DIR (str): The path to the 'models' directory within the 'ml'
+    directory.
+    ML_DATA_DIR (str): The path to the 'data' directory within the 'ml'
+    directory.
+    INPUT_EXAMPLE (str): The path to the example input data file.
+"""
 import logging
+import os
+import sys
+from pathlib import Path
 
 from loguru import logger
 from starlette.config import Config
 from starlette.datastructures import Secret
 
 from app.core.logging import InterceptHandler
-import os
-from pathlib import Path
 
 config = Config(".env")
 
@@ -17,7 +43,9 @@ DEBUG: bool = config("DEBUG", cast=bool, default=False)
 PRE_LOAD: bool = config("PRE_LOAD", cast=bool, default=True)
 MAX_CONNECTIONS_COUNT: int = config("MAX_CONNECTIONS_COUNT", cast=int, default=10)
 MIN_CONNECTIONS_COUNT: int = config("MIN_CONNECTIONS_COUNT", cast=int, default=10)
-CLIENT_API_KEY: Secret = config("CLIENT_API_KEY", cast=Secret, default="my_api_key")
+CLIENT_API_KEY: Secret = config(
+    "CLIENT_API_KEY", cast=Secret, default=Secret("my_api_key")
+)
 PROJECT_NAME: str = config("PROJECT_NAME", default="Property friends real estate case")
 MODEL_NAME = config("MODEL_NAME", default="model.joblib")
 

@@ -1,6 +1,11 @@
-class PredictException(BaseException):
-    ...
+"""
+Custom API endpoint exceptions.
+"""
 
 
-class ModelLoadException(BaseException):
-    ...
+class PredictException(Exception):
+    """Exception for prediction-related errors."""
+
+
+class ModelLoadException(Exception):
+    """Exception for model loading errors."""
