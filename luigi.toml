@@ -1,5 +1,5 @@
 [scheduler]
-record_task_history = True
+record_task_history = true
 state_path = /logs/luigi-state.pickle
 
 [task_history]
