@@ -6,6 +6,7 @@ It includes the following routes:
 - `/predict`: Takes input data, makes predictions, and returns the result.
 - `/health`: Checks the health of the model by performing a test prediction.
 """
+import datetime
 import json
 import typing
 
@@ -17,7 +18,7 @@ from numpy.typing import NDArray
 
 from app.core.config import INPUT_EXAMPLE
 from app.core.middleware.api_key_middleware import token_auth_scheme
-from app.core.monitoring import save_to_json, read_log_entries
+from app.core.monitoring import read_log_entries, save_to_json
 from app.models.prediction import (
     HealthResponse,
     ModelInput,
@@ -149,5 +150,29 @@ async def get_log_entries(
     **Output**
     - `list[PredictLogEntry]`: A list of log entries as dictionaries.
     """
-    log_entries = read_log_entries(limit)
+    log_entries_data = read_log_entries(limit)
+    log_entries = []
+
+    for entry in log_entries_data:
+        input_data_list = entry.get("input", [])
+        if isinstance(input_data_list, list):
+            input_list = [ModelInput(**input_data) for input_data in input_data_list if isinstance(input_data, dict)]  # type: ignore
+        else:
+            input_list = []
+
+        result = entry.get("result")
+        result = (
+            float(result) if isinstance(result, (float, int, str)) else 0.0
+        )  # Convert to float if possible
+
+        date_str = entry.get("date", "")
+        date = (
+            datetime.datetime.fromisoformat(date_str)
+            if isinstance(date_str, str)
+            else datetime.datetime.now()
+        )  # Parse date
+
+        log_entry = PredictLogEntry(input=input_list, result=result, date=date)
+        log_entries.append(log_entry)
+
     return log_entries

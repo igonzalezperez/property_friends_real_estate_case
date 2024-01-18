@@ -3,6 +3,7 @@ Utility for Saving Data to Text File
 """
 import datetime
 import json
+from typing import Dict, List, Union
 
 import numpy as np
 import pandas as pd
@@ -47,7 +48,9 @@ def save_to_json(
             json.dump([new_data], stream, indent=4)
 
 
-def read_log_entries(limit: int) -> list[dict]:
+def read_log_entries(
+    limit: int,
+) -> List[Dict[str, Union[str, float, List[Dict[str, Union[str, float]]]]]]:
     """
     Read and return a list of log entries from the JSON log file.
 
@@ -57,8 +60,7 @@ def read_log_entries(limit: int) -> list[dict]:
     try:
         with open("app/log/model_predictions.json", "r") as log_file:
             log_data = json.load(log_file)
-        # Reverse the log entries to show the most recent ones first
         log_data.reverse()
-        return log_data[: min(limit, len(log_data))]
+        return log_data[: min(limit, len(log_data))]  # type: ignore
     except FileNotFoundError:
         return []

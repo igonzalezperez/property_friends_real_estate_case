@@ -34,7 +34,7 @@ ci-format:
 	poetry run black --check . --exclude .venv/
 
 ci-lint:
-	find . -name '*.py' ! -name '__init__.py' -exec poetry run flake8 --config=config/.flake8 {} \;
+	poetry run flake8 --config=config/.flake8
 	find . -name '*.py' ! -name '__init__.py' -exec poetry run pylint --rcfile=config/.pylintrc {} \;
 	poetry run mypy --config-file=config/mypy.ini .
 

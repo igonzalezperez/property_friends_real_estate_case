@@ -3,9 +3,10 @@ This module defines the data models used in the application. Namely the
 model input features, model response (target) and a health check response.
 """
 
+import datetime
+
 import pandas as pd
 from pydantic import BaseModel
-import datetime
 
 
 class ModelResponse(BaseModel):
