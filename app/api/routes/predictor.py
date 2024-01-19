@@ -17,6 +17,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from numpy.typing import NDArray
 
 from app.core.config import INPUT_EXAMPLE
+from app.core.errors import PredictException
 from app.core.middleware.api_key_middleware import token_auth_scheme
 from app.core.monitoring import read_log_entries, save_to_json
 from app.models.prediction import (
@@ -41,7 +42,11 @@ def get_prediction(data_point: pd.DataFrame) -> NDArray[np.float64]:
     :return NDArray[np.float64]: Predicted value as an array of type
     np.float64.
     """
-    return model.predict(data_point, load_wrapper=joblib.load, method="predict")
+    return model.predict(
+        data_point,
+        load_wrapper=joblib.load,
+        method="predict",
+    )
 
 
 @router.post(
@@ -69,8 +74,8 @@ async def predict(
 
     **Raises**
     - `HTTPException 400`: If the 'data_input' argument is invalid.
-    - `HTTPException 500`: The prediction results.
-
+    - `HTTPException 500`: If the model artifact doesn't exist or is
+    unavailable.
     """
     if not data_input:
         raise HTTPException(
@@ -85,8 +90,8 @@ async def predict(
             data_input=data_point,
             result=prediction,
         )
-    except Exception as err:
-        raise HTTPException(status_code=500, detail=f"Exception: {err}") from err
+    except PredictException as err:
+        raise HTTPException(status_code=503, detail=f"Exception: {err}") from err
     return ModelResponse(prediction=prediction)
 
 
@@ -102,7 +107,8 @@ async def health() -> HealthResponse:
 
     Check the health status of the API.
 
-    This endpoint performs a health check to ensure that the API is running properly.
+    This endpoint performs a health check to ensure that the API is running
+    properly.
 
     **Output**
     - `HealthResponse`: The health status of the API.
@@ -120,13 +126,16 @@ async def health() -> HealthResponse:
         is_health = True
         return HealthResponse(status=is_health)
     except Exception as exc:
-        raise HTTPException(status_code=503, detail="Service unavailable") from exc
+        raise HTTPException(
+            status_code=503,
+            detail="Service unavailable",
+        ) from exc
 
 
 @log_router.get(
-    "/log",
+    "/predict-logs",
     response_model=list[PredictLogEntry],
-    name="log:get-data",
+    name="predict-logs:get-data",
     dependencies=[Depends(token_auth_scheme)],  # api token authentication
 )
 async def get_log_entries(
@@ -156,7 +165,10 @@ async def get_log_entries(
     for entry in log_entries_data:
         input_data_list = entry.get("input", [])
         if isinstance(input_data_list, list):
-            input_list = [ModelInput(**input_data) for input_data in input_data_list if isinstance(input_data, dict)]  # type: ignore
+            input_list = []
+            for input_data in input_data_list:
+                if isinstance(input_data, dict):
+                    input_list.append(ModelInput(**input_data))  # type: ignore
         else:
             input_list = []
 

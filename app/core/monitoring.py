@@ -21,7 +21,7 @@ def save_to_json(
     :param pd.DataFrame data_input: The input data to be saved.
     :param NDArray[np.float64] result: The result data to be saved.
     """
-    file_path = "app/log/model_predictions.json"
+    file_path = "app/logs/model_predictions.json"
     new_data = {
         "input": data_input.to_dict(orient="records"),
         "result": result[0],
@@ -58,7 +58,8 @@ def read_log_entries(
     :return list[dict]: A list of log entries as dictionaries.
     """
     try:
-        with open("app/log/model_predictions.json", "r") as log_file:
+        loc = "app/logs/model_predictions.json"
+        with open(loc, "r", encoding="utf-8") as log_file:
             log_data = json.load(log_file)
         log_data.reverse()
         return log_data[: min(limit, len(log_data))]  # type: ignore

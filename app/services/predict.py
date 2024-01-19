@@ -10,7 +10,7 @@ import pandas as pd
 from loguru import logger
 
 # pylint: disable=E0401
-from app.core.config import ML_MODELS_DIR, MODEL_NAME
+from app.core.config import BASE_MODEL_NAME, ML_MODELS_DIR
 from app.core.errors import ModelLoadException, PredictException
 
 
@@ -68,9 +68,9 @@ class ModelHandlerScore:
         :return: The loaded model.
         """
         model = None
-        path = Path(ML_MODELS_DIR, MODEL_NAME)
+        path = Path(ML_MODELS_DIR, BASE_MODEL_NAME)
         if not os.path.exists(path):
-            message = f"Machine learning model at {path} not exists!"
+            message = f"Machine learning model at {path} doesn't exist"
             logger.error(message)
             raise FileNotFoundError(message)
         model = load_wrapper(path)

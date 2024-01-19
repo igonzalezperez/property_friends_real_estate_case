@@ -21,6 +21,9 @@ def create_start_app_handler(app: FastAPI):
     """Create a startup handler function for FastAPI application."""
 
     def start_app() -> None:
-        preload_model()
+        try:
+            preload_model()
+        except FileNotFoundError:
+            pass  # Error log is inside preload_model()
 
     return start_app
