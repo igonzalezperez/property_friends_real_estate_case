@@ -1,4 +1,3 @@
-# Use a smaller base image (slim version)
 FROM python:3.11-slim
 
 ENV \
@@ -17,10 +16,12 @@ WORKDIR /real-estate-price-prediction
 
 COPY poetry.lock pyproject.toml ./
 
-# Combine the installation of make, poetry, create a virtual environment, and install uvicorn
 RUN apt-get update \
-    && apt-get install -y make \
+    && apt-get install -y \
+    git \
+    make \
     && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
     && pip install "poetry==$POETRY_VERSION"
 
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"

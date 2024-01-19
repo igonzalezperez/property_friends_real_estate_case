@@ -12,7 +12,7 @@ Estimate property valuations
 
 ```sh
 MODEL_PATH=./ml/model/
-MODEL_NAME=model.joblib
+BASE_MODEL_NAME=model.joblib
 ```
 
 ### Update `/predict`

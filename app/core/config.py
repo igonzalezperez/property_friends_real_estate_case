@@ -13,7 +13,7 @@ Attributes:
     MIN_CONNECTIONS_COUNT (int): The minimum number of connections required.
     CLIENT_API_KEY (Secret): The client API key for authentication.
     PROJECT_NAME (str): The name of the FastAPI project.
-    MODEL_NAME (str): The default name for the machine learning model.
+    BASE_MODEL_NAME (str): The default name for the machine learning model.
 
     LOGGING_LEVEL (int): The logging level for the application.
     logger (Logger): The logger instance for the application.
@@ -47,7 +47,12 @@ CLIENT_API_KEY: Secret = config(
     "CLIENT_API_KEY", cast=Secret, default=Secret("my_api_key")
 )
 PROJECT_NAME: str = config("PROJECT_NAME", default="Property friends real estate case")
-MODEL_NAME = config("MODEL_NAME", default="model.joblib")
+BASE_MODEL_NAME: str = config("BASE_MODEL_NAME", default="model.joblib")
+MLFLOW_TRACKING_URI: str = config(
+    "MLFLOW_TRACKING_URI", default="sqlite:///ml/mlflow/mlflow.db"
+)
+MLFLOW_ARTIFACT_ROOT: str = config("MLFLOW_ARTIFACT_ROOT", default="/ml/models/mlflow")
+
 
 # logging configuration
 LOGGING_LEVEL = logging.DEBUG if DEBUG else logging.INFO
@@ -74,8 +79,10 @@ logger.info(f"MAX_CONNECTIONS_COUNT: {MAX_CONNECTIONS_COUNT}")
 logger.info(f"MIN_CONNECTIONS_COUNT: {MIN_CONNECTIONS_COUNT}")
 logger.info(f"CLIENT_API_KEY: {CLIENT_API_KEY}")
 logger.info(f"PROJECT_NAME: {PROJECT_NAME}")
-logger.info(f"MODEL_NAME: {MODEL_NAME}")
-logger.info(f"ML_DIR {ML_DIR}")
-logger.info(f"ML_MODELS_DIR {ML_MODELS_DIR}")
-logger.info(f"ML_DATA_DIR {ML_DATA_DIR}")
-logger.info(f"INPUT_EXAMPLE {INPUT_EXAMPLE}")
+logger.info(f"BASE_MODEL_NAME: {BASE_MODEL_NAME}")
+logger.info(f"ML_DIR: {ML_DIR}")
+logger.info(f"ML_MODELS_DIR: {ML_MODELS_DIR}")
+logger.info(f"ML_DATA_DIR: {ML_DATA_DIR}")
+logger.info(f"MLFLOW_TRACKING_URI: {MLFLOW_TRACKING_URI}")
+logger.info(f"MLFLOW_ARTIFACT_ROOT: {MLFLOW_ARTIFACT_ROOT}")
+logger.info(f"INPUT_EXAMPLE: {INPUT_EXAMPLE}")

@@ -1,0 +1,28 @@
+data_catalog:
+  columns:
+    features:
+      numerical:
+        - net_usable_area
+        - net_area
+        - n_rooms
+        - n_bathroom
+        - latitude
+        - longitude
+      categorical:
+        - type
+        - sector
+    target: price
+
+model_pipeline:
+  preprocessor:
+    transformers:
+      categorical: category_encoders.TargetEncoder
+      numerical: sklearn.preprocessing.StandardScaler
+
+  model:
+    type: sklearn.ensemble.GradientBoostingRegressor
+    parameters:
+      learning_rate: 0.01
+      n_estimators: 300
+      max_depth: 5
+      loss: absolute_error

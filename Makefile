@@ -11,8 +11,8 @@ ifeq ($(MODEL_PATH),)
 MODEL_PATH := ./ml/model/
 endif
 
-ifeq ($(MODEL_NAME),)
-MODEL_NAME := model.joblib
+ifeq ($(BASE_MODEL_NAME),)
+BASE_MODEL_NAME := model.joblib
 endif
 
 # Target section and Global definitions
@@ -29,22 +29,6 @@ install: generate_dot_env
 	pip install poetry
 	poetry install --with dev
 
-ci-format:
-	poetry run isort . --profile black --check-only
-	poetry run black --check . --exclude .venv/
-
-ci-lint:
-	poetry run flake8 --config=config/.flake8
-	find . -name '*.py' ! -name '__init__.py' -exec poetry run pylint --rcfile=config/.pylintrc {} \;
-	poetry run mypy --config-file=config/mypy.ini .
-
-ci-security:
-	poetry run bandit -c config/.bandit.yml -r .
-
-ci-pipeline: ci-format ci-lint ci-security
-
-data-pipeline:
-	poetry run python ml/pipelines/luigi_tasks.py
 run:
 	PYTHONPATH=app/ poetry run uvicorn main:app --reload --host 0.0.0.0 --port 8080
 
@@ -72,3 +56,32 @@ clean:
 	rm -rf htmlcov
 	rm -rf .tox/
 	rm -rf docs/_build
+
+# 
+ci-format:
+	poetry run isort . --profile black --check-only
+	poetry run black --check . --exclude .venv/
+
+ci-lint:
+	poetry run flake8 --config=config/.flake8
+	find . -name '*.py' ! -name '__init__.py' -exec poetry run pylint --rcfile=config/.pylintrc {} \;
+	poetry run mypy --config-file=config/mypy.ini .
+
+ci-security:
+	poetry run bandit -c config/.bandit.yml -r .
+
+ci-pipeline: ci-format ci-lint ci-security
+
+data-pipeline:
+	poetry run python ml/pipelines/luigi_tasks.py
+
+make-dataset:
+	poetry run python ml/pipelines/make_dataset.py
+
+build-features:
+	poetry run python ml/pipelines/build_features.py
+
+train-model:
+	poetry run python ml/pipelines/train_model.py
+
+data-pipeline-simple: make-dataset build-features train-model

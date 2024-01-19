@@ -17,3 +17,21 @@ services:
       - ./Makefile:/real-estate-price-prediction/Makefile
       - ./luigi.toml:/real-estate-price-prediction/luigi.toml
     working_dir: /real-estate-price-prediction
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
+  mlflow:
+    build:
+      context: .
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    environment:
+      - MLFLOW_TRACKING_URI=${MLFLOW_TRACKING_URI}
+      - MLFLOW_ARTIFACT_ROOT=${MLFLOW_ARTIFACT_ROOT}
+    volumes:
+      - ./ml:/real-estate-price-prediction/ml
+      - ./ml/models/mlflow:/real-estate-price-prediction/ml/models/mlflow
+      - ./config:/real-estate-price-prediction/config
+      - ./Makefile:/real-estate-price-prediction/Makefile
+      - ./luigi.toml:/real-estate-price-prediction/luigi.toml
+    command: mlflow server --backend-store-uri=$MLFLOW_TRACKING_URI --default-artifact-root=$MLFLOW_ARTIFACT_ROOT -h 0.0.0.0 -p 5000
