@@ -28,7 +28,6 @@ Example:
     ```
 """
 from pathlib import Path
-from typing import Union
 
 import click
 import mlflow
