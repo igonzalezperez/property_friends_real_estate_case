@@ -1,86 +1,72 @@
 """
-Data Processing Pipeline
+Model Training Pipeline
 
-This script defines a data processing pipeline that transforms cleaned data
-and builds a machine learning model. It reads the cleaned data from a CSV file
-in 'input_data_dir', applies preprocessing using a saved pipeline from
-'input_model_dir', and then trains a Gradient Boosting Regressor model.
-The trained model is saved in 'output_model_dir'.
+This script trains a predictive Model from data in ../interim and a previously
+fitted pipeline at ../models to get input features. The trained model is logged
+using MLFlow and is saved in ml/models/trained_model. If the TEST_PREDICT env
+variable is set to True it also logs the accuracy on test set.
 
 Usage:
     To run this script, use the following command:
     ```
-    python process_data_and_train_model.py [INPUT_DATA_DIR] [INPUT_MODEL_DIR]
-    [OUTPUT_MODEL_DIR]
-    ```
-
-Arguments:
-    INPUT_DATA_DIR (str): The directory containing the cleaned input data
-    (default: "ml/data/interim").
-    INPUT_MODEL_DIR (str): The directory containing the saved preprocessing
-    pipeline and model (default: "ml/models").
-    OUTPUT_MODEL_DIR (str): The directory where the trained model will be saved
-    (default: "ml/models").
-
-Example:
-    ```
-    python process_data_and_train_model.py ml/data/interim ml/models ml/models
+    (poetry run) python ml/pipelines/make_dataset.py [INPUT_DIR]
+    [INPUT_FILE] [INPUT_TEST_FILE] [INPUT_PIPELINE_DIR] [INPUT_PIPELINE_FILE]
     ```
 """
+import os
+import shutil
 from pathlib import Path
 
 import click
 import mlflow
 import pandas as pd
-import yaml
 from dotenv import find_dotenv, load_dotenv
-from joblib import dump, load
+from joblib import load
 from loguru import logger
+from mlflow.models import infer_signature
 from sklearn.pipeline import Pipeline
 
-from app.core.config import (
-    BASE_MODEL_NAME,
-    ML_DATA_DIR,
-    ML_DIR,
-    ML_MODELS_DIR,
-    MLFLOW_ARTIFACT_ROOT,
-    MLFLOW_TRACKING_URI,
-)
+from ml.pipelines.utils import get_pipeline_config, log_metrics
 
-with open(
-    Path(ML_DIR, "pipelines", "pipeline_config.yml"), "r", encoding="utf-8"
-) as file:
-    config = yaml.safe_load(file)
-
-NUM_COLS = config["data_catalog"]["columns"]["features"]["numerical"]
-CAT_COLS = config["data_catalog"]["columns"]["features"]["categorical"]
-FEATURE_COLS = [*CAT_COLS, *NUM_COLS]
-TARGET_COL = config["data_catalog"]["columns"]["target"]
-
-MODEL_CLASS_PATH = config["model_pipeline"]["model"]["type"]
-MODEL_PARAMS = config["model_pipeline"]["model"]["parameters"]
-
-MODEL_MODULE, MODEL_CLASS = MODEL_CLASS_PATH.rsplit(".", 1)
-MODEL_ = __import__(MODEL_MODULE, fromlist=[MODEL_CLASS])
-MODEL = getattr(MODEL_, MODEL_CLASS)
+load_dotenv(find_dotenv())
 
 
 def pipeline(
     input_dir: str,
     input_file: str,
+    input_test_file: str,
     input_pipeline_dir: str,
     input_pipeline_file: str,
-    output_path: str,
 ) -> None:
     """
-    Build a data preprocessing pipeline to transform input data.
+    Build a ML training pipeline and save fitted model.
 
-    :param Union[str, Path] input_dir: Input data directory
-    :param Union[str, Path] input_file: Input file name
-    :param Union[str, Path] output_model_path: Output model file path
+    :param str input_dir: Input data directory
+    :param str input_file: Input file name
+    :param str input_test_file: Input test file name
+    :param str input_pipeline_dir: Input pipeline model directory
+    :param str input_pipeline_file: Input pipeline model file
     """
+    # Check if input paths exists
+    valid_test = True
+    if not Path(input_dir, input_file).exists():
+        raise FileNotFoundError(f"File '{Path(input_dir, input_file)}' doesn't exist")
+    if not Path(input_dir, input_file).exists():
+        logger.warning(f"File '{Path(input_dir, input_test_file)}' doesn't exist")
+        valid_test = False
+    if not Path(input_pipeline_dir, input_pipeline_file).exists():
+        raise FileNotFoundError(
+            f"File '{Path(input_pipeline_dir, input_pipeline_file)}' doesn't exist"
+        )
+
+    # Load pipeline params
+    logger.info("Load data pipeline config.")
+    params = get_pipeline_config()
     logger.info("Start building features.")
+
+    # Load input data and pipeline
     input_path = Path(input_dir, input_file)
+    input_test_path = Path(input_dir, input_test_file)
     input_pipeline_path = Path(input_pipeline_dir, input_pipeline_file)
 
     logger.info(f"Reading preprocessed data from: {input_path}")
@@ -88,102 +74,135 @@ def pipeline(
     logger.info(f"Reading processing pipeline data from: {input_pipeline_path}")
     preproc_pipeline = load(input_pipeline_path)
 
-    logger.info(f"Model Features: {FEATURE_COLS}")
-    logger.info(f"Model Target: {TARGET_COL}")
+    logger.info(f"Model Features: {params['feature_cols']}")
+    logger.info(f"Model Target: {params['target_col']}")
 
-    logger.info(f"Model Type: {MODEL}")
-    logger.info(f"Model Params: {MODEL_PARAMS}")
+    logger.info(f"Model Type: {params['model']}")
+    logger.info(f"Model Params: {params['model_params']}")
 
-    model = MODEL(**MODEL_PARAMS)
+    # Initialize model
+    model = params["model"](**params["model_params"])
 
     logger.info(f"Training model: {model.__class__} with parameters: {model.__dict__}")
     model_pipe = Pipeline([("preprocessor", preproc_pipeline), ("model", model)])
-    mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+
+    # Use existing MLFlow experiment or create a new one if there isn't any
+    mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI"))
     experiments = mlflow.search_experiments(filter_string="name = 'TrainModel'")
     if not experiments:
+        artifact_location = str(Path(str(os.getenv("MLFLOW_ARTIFACT_ROOT")), "1"))
         exp_id = mlflow.create_experiment(
-            "TrainModel", artifact_location=MLFLOW_ARTIFACT_ROOT + "/1"
+            "TrainModel", artifact_location=artifact_location
         )
     else:
         exp_id = experiments[-1].experiment_id
-    print(exp_id)
+
+    # Training
     with mlflow.start_run(experiment_id=exp_id):
-        mlflow.set_tag("model_name", MODEL_CLASS_PATH)
-        mlflow.log_params(MODEL_PARAMS)
-        model_pipe.fit(data[FEATURE_COLS], data[TARGET_COL])
-        logger.info(f"Saving model to {output_path}")
-        dump(model_pipe, output_path)
-        # with open(output_path, "wb", encoding="utf-8") as stream:
-        #     pickle.dump(model_pipe, stream)
+        mlflow.log_params(params["model_params"])
+        data[params["target_col"]] = data[params["target_col"]].astype("float")
+        model_pipe.fit(data[params["feature_cols"]], data[params["target_col"]])
+        signature = infer_signature(
+            data[params["feature_cols"]],
+            data[params["target_col"]],
+            params["model_params"],
+        )
         mlflow.sklearn.log_model(
             sk_model=model_pipe,
-            artifact_path=Path(output_path).stem,
+            artifact_path="model",
+            signature=signature,
+        )
+        model_path = Path(
+            str(os.getenv("ML_MODELS_DIR")),
+            "trained_model",
+        )
+        if os.path.exists(model_path):
+            shutil.rmtree(model_path)
+        mlflow.sklearn.save_model(
+            sk_model=model_pipe,
+            path=model_path,
         )
 
-        logger.debug(MLFLOW_ARTIFACT_ROOT)
+        # Train metrics
+        preds = model_pipe.predict(
+            data[params["feature_cols"]],
+        )
+        log_metrics(
+            params["metrics"],
+            data[params["target_col"]].values,
+            preds,
+            "train",
+        )
+        # Test metrics
+        if os.getenv("TEST_PREDICT") and valid_test:
+            logger.info(f"Reading preprocessed TEST data from: {input_path}")
+            data_test = pd.read_csv(input_test_path)
+            data_test[params["target_col"]] = data_test[params["target_col"]].astype(
+                "float"
+            )
+            test_preds = model_pipe.predict(
+                data_test[params["feature_cols"]],
+            )
+            log_metrics(
+                params["metrics"],
+                data_test[params["target_col"]].values,
+                test_preds,
+                "test",
+            )
+        logger.debug(os.getenv("MLFLOW_ARTIFACT_ROOT"))
         logger.debug(mlflow.get_artifact_uri())
     logger.success("Successfully ran TrainModel")
 
 
 @click.command()
 @click.option(
-    "--input-file-dir",
+    "--input-dir",
     "input_dir",
-    default=Path(ML_DATA_DIR, "interim"),
+    default=Path(str(os.getenv("ML_DATA_DIR")), "interim"),
     type=click.Path(exists=True),
 )
 @click.option(
     "--input-file",
     "input_file",
-    default="preprocessed_train.csv",
+    default=f"{str(os.getenv('INTERIM_DATA_PREFIX'))}_{str(os.getenv('TRAIN_FILE_NAME'))}",
+)
+@click.option(
+    "--input-test-file",
+    "input_test_file",
+    default=f"{str(os.getenv('INTERIM_DATA_PREFIX'))}_{str(os.getenv('TEST_FILE_NAME'))}",
 )
 @click.option(
     "--input-pipeline-dir",
     "input_pipeline_dir",
-    default=ML_MODELS_DIR,
+    default=os.getenv("ML_MODELS_DIR"),
     type=click.Path(exists=True),
 )
 @click.option(
     "--input-pipeline-file",
     "input_pipeline_file",
-    default="preproc_pipeline.joblib",
+    default=os.getenv("PREPROC_FILE_NAME"),
 )
-@click.option(
-    "--output-dir",
-    "output_dir",
-    default=ML_MODELS_DIR,
-    type=click.Path(exists=True),
-)
-def main(
+def run(
     input_dir: str,
     input_file: str,
+    input_test_file: str,
     input_pipeline_dir: str,
     input_pipeline_file: str,
-    output_dir: str,
 ) -> None:
     """
     Run data processing scripts to preprocess cleaned data from (../interim)
     and train a machine learning model.
     The trained model is saved in (../models).
     """
-    if not Path(input_dir, input_file).exists():
-        raise FileNotFoundError(f"File '{Path(input_dir, input_file)}' doesn't exist")
-    if not Path(input_pipeline_dir, input_pipeline_file).exists():
-        raise FileNotFoundError(
-            f"File '{Path(input_pipeline_dir, input_pipeline_file)}' doesn't exist"
-        )
-    output_path = str(Path(output_dir, BASE_MODEL_NAME))
     pipeline(
         input_dir,
         input_file,
+        input_test_file,
         input_pipeline_dir,
         input_pipeline_file,
-        output_path,
     )
 
 
 if __name__ == "__main__":
-    load_dotenv(find_dotenv())
-
     # pylint: disable = no-value-for-parameter
-    main()
+    run()
