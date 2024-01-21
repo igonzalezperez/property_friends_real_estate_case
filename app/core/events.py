@@ -2,9 +2,9 @@
 Module for handling model preloading and startup handling in FastAPI.
 """
 import typing
+from pickle import load
 
 from fastapi import FastAPI
-from joblib import load
 
 from app.services.predict import ModelHandlerScore
 

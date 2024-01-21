@@ -27,7 +27,7 @@ test:
 install: generate_dot_env
 	pip install --upgrade pip
 	pip install poetry
-	poetry install --with dev
+	poetry install --with dev --no-root
 
 run:
 	PYTHONPATH=app/ poetry run uvicorn main:app --reload --host 0.0.0.0 --port 8080
@@ -68,11 +68,11 @@ ci-lint:
 	poetry run mypy --config-file=config/mypy.ini .
 
 ci-security:
-	poetry run bandit -c config/.bandit.yml -r .
+	poetry run bandit -ll -c config/.bandit.yml -r .
 
 ci-pipeline: ci-format ci-lint ci-security
 
-data-pipeline:
+ml-pipeline:
 	poetry run python ml/pipelines/luigi_tasks.py
 
 make-dataset:
@@ -84,4 +84,4 @@ build-features:
 train-model:
 	poetry run python ml/pipelines/train_model.py
 
-data-pipeline-simple: make-dataset build-features train-model
+ml-pipeline-base: make-dataset build-features train-model

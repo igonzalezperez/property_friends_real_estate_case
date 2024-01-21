@@ -3,7 +3,7 @@ Utility for Saving Data to Text File
 """
 import datetime
 import json
-from typing import Dict, List, Union
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -50,12 +50,12 @@ def save_to_json(
 
 def read_log_entries(
     limit: int,
-) -> List[Dict[str, Union[str, float, List[Dict[str, Union[str, float]]]]]]:
+) -> list[dict[str, Any]]:
     """
     Read and return a list of log entries from the JSON log file.
 
     :param int limit: The maximum number of log entries to retrieve.
-    :return list[dict]: A list of log entries as dictionaries.
+    :return list[dict[str, Any]]: A list of log entries as dictionaries.
     """
     try:
         loc = "app/logs/model_predictions.json"

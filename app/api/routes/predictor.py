@@ -9,8 +9,8 @@ It includes the following routes:
 import datetime
 import json
 import typing
+from pickle import load
 
-import joblib
 import numpy as np
 import pandas as pd
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
@@ -44,7 +44,7 @@ def get_prediction(data_point: pd.DataFrame) -> NDArray[np.float64]:
     """
     return model.predict(
         data_point,
-        load_wrapper=joblib.load,
+        load_wrapper=load,
         method="predict",
     )
 
@@ -74,7 +74,7 @@ async def predict(
 
     **Raises**
     - `HTTPException 400`: If the 'data_input' argument is invalid.
-    - `HTTPException 500`: If the model artifact doesn't exist or is
+    - `HTTPException 503`: If the model artifact doesn't exist or is
     unavailable.
     """
     if not data_input:
@@ -147,7 +147,7 @@ async def get_log_entries(
     """
     **Prediction Logs API**
 
-    Get predict inputs and output entries.
+    Get historical predict inputs and output entries.
 
     This endpoint retrieves the latest log entries from a JSON file and returns
     them as a list.
@@ -168,7 +168,7 @@ async def get_log_entries(
             input_list = []
             for input_data in input_data_list:
                 if isinstance(input_data, dict):
-                    input_list.append(ModelInput(**input_data))  # type: ignore
+                    input_list.append(ModelInput(**input_data))
         else:
             input_list = []
 
