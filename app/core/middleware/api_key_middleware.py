@@ -1,11 +1,10 @@
 """
-Custom FastAPI authentication scheme for API token validation. Tokens are
-validated against tokens set in the environment variables.
+Custom FastAPI authentication scheme for API token validation.
 """
-import os
-
 from fastapi import HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
+from app.core.middleware.api_key_auth import ApiKeyManager
 
 
 # pylint: disable=too-few-public-methods
@@ -24,7 +23,7 @@ class TokenValidator(HTTPBearer):
 
     async def __call__(self, request: Request) -> HTTPAuthorizationCredentials:
         """
-        Validate API token.
+        Validate API token using the ApiKeyManager.
 
         :param Request request: FastAPI request object
         :raises HTTPException: Raised if token validation fails
@@ -33,7 +32,7 @@ class TokenValidator(HTTPBearer):
         credentials = await super().__call__(request)
         if credentials:
             token = credentials.credentials
-            if token == os.environ.get("CLIENT_API_KEY"):
+            if ApiKeyManager().validate_api_key(token):
                 return credentials
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
