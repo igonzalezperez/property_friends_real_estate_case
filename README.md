@@ -2,11 +2,58 @@
 
 Estimate property valuations
 
+Property Friends Real Estate Case is a FastAPI-based application designed to receive inputs and use a trained machine learning model to return predictions based on those inputs. The application is containerized using Docker for ease of setup and reproducibility.
+
 ## Development Requirements
 
-- Python3.11.0
-- Pip
-- Poetry (Python Package Manager)
+- Git (to clone the repository)
+- Docker and Docker Compose
+- Other requirements are handled within the container (e.g. python dependencies) so the user/host doesn't need them.
+
+## Setup
+1. Clone the repository using Git.
+```
+git clone https://github.com/igonzalezperez/property_friends_real_estate_case.git
+```
+2. Ensure Docker and Docker Compose are installed on your system.
+3. Create a `.env` file in the project root directory using the values from `.env.example`.
+4. Place your `train.csv` and `test.csv` files in the `/ml/data/raw/` directory.
+
+## Running the app
+### Data and model setup
+1. Start the containers:
+```
+docker-compose up -d --build
+```
+2. Initialize postgres DB:
+```
+docker exec -it property_friends_real_estate_case-db-1 /bin/bash
+```
+This will open a CLI in the DB container, in there run:
+```
+bash ml/pipelines/db_init.sh
+```
+Then exit the container with:
+```
+exit
+```
+3. Run ML pipelines to load data, transform it and train predictive model.
+```
+docker exec -it property_friends_real_estate_case-app-1 /bin/bash
+```
+This will open a CLI in the DB container, in there run:
+```
+make ml-pipeline
+```
+When the pipeline finishes, the model will be stored and available for the app endpoints.
+### App usage
+Go to `localhost:8080/docs`, this will show the docs of the API using the swagger UI, in there you can test all the endpoints.
+1. Upon starting the app, a valid API key will be created and stored at `app/valid_keys/api_keys.json`, there you can copy the API key and paste when prompted for it in the Authorize button of the UI.
+2. Click on the endpoint entries, each one has a "Try it out" button, press it and then press the "Execute" button to test the endpoint with a valid payload. These are the available endpoints:
+- /predict: POST a valid payload to receive a prediction.
+- /health: GET the health status of the application.
+- /predict-logs: GET recent calls to the predict endpoint.
+- /model-runs: GET metadata of model training instances.
 
 ### M.L Model Environment
 

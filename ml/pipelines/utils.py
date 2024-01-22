@@ -6,13 +6,25 @@ from pathlib import Path
 from typing import Any, Callable
 
 import mlflow
+import pandas as pd
 import yaml
 from dotenv import find_dotenv, load_dotenv
 from loguru import logger
 from numpy import float64, sqrt
 from numpy.typing import NDArray
+from sqlalchemy import create_engine
+from sqlalchemy.exc import SQLAlchemyError
 
 load_dotenv(find_dotenv())
+DB_PARAMS = {
+    "dbname": os.getenv("DB_NAME"),
+    "user": os.getenv("DB_USER"),
+    "password": os.getenv("DB_PASSWORD"),
+    "host": "db",
+    "port": "5432",
+}
+
+DB_CONN_STR = f'postgresql://{DB_PARAMS["user"]}:{DB_PARAMS["password"]}@{DB_PARAMS["host"]}:{DB_PARAMS["port"]}/{DB_PARAMS["dbname"]}'
 
 # type hint for metric functions
 MetricFunction = Callable[[NDArray[float64], NDArray[float64]], float]
@@ -124,3 +136,23 @@ def log_metrics(
         metrics_dict[metric_name] = metric_value
         logger.info(f"{metric_name} = {metric_value}")
     mlflow.log_metrics(metrics_dict)
+
+
+def get_table_as_df(db_conn_str: str, table_name: str) -> pd.DataFrame:
+    """
+    Retrieves data from a database table and returns it as a DataFrame.
+
+    :param str db_conn_str: DB connection string.
+    :param str table_name: The name of the table to retrieve data from.
+    :return pd.DataFrame: A DataFrame containing the data from the specified
+    table.
+    :raises sqlalchemy.exc.SQLAlchemyError: If there is an error with the
+    database connection.
+    """
+    engine = create_engine(db_conn_str)
+    try:
+        df = pd.read_sql(table_name, con=engine)
+        return df
+    except SQLAlchemyError as e:
+        logger.error(f"Database connection error: {e}")
+        raise

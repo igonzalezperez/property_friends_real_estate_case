@@ -22,7 +22,7 @@ from dotenv import find_dotenv, load_dotenv
 from loguru import logger
 from sklearn.model_selection import train_test_split
 
-from ml.pipelines.utils import get_pipeline_config
+from ml.pipelines.utils import DB_CONN_STR, get_pipeline_config, get_table_as_df
 
 load_dotenv(find_dotenv())
 
@@ -40,27 +40,33 @@ def pipeline(
     :param Union[str, Path] input_file: File name of input
     :param Union[str, Path] output_path: Directory of output
     """
-    if not Path(input_dir, input_file).exists():
-        err_msg = f"File '{Path(input_dir, input_file)}' doesn't exist"
-        raise FileNotFoundError(err_msg)
-    if not Path(input_dir, input_test_file).exists():
-        err_msg = f"File '{Path(input_dir, input_test_file)}' doesn't exist"
-        raise FileNotFoundError(err_msg)
     output_path = str(
         Path(output_dir, f"{os.getenv('INTERIM_DATA_PREFIX')}_{input_file}")
     )
     output_test_path = str(
         Path(output_dir, f"{os.getenv('INTERIM_DATA_PREFIX')}_{input_test_file}")
     )
-    logger.info(f"Read from {input_file}, write to {output_path}.")
-    logger.info("Start preprocessing data.")
-    input_path = Path(input_dir, input_file)
-    input_test_path = Path(input_dir, input_test_file)
+    # Load data from db
+    if os.getenv("USE_DB"):
+        logger.info("Reading data from DB")
+        df = get_table_as_df(DB_CONN_STR, "raw_data")
+        data = df[df["is_train"]]
+        data_test = df[~df["is_train"]]
+    # Load data from files
+    else:
+        if not Path(input_dir, input_file).exists():
+            err_msg = f"File '{Path(input_dir, input_file)}' doesn't exist"
+            raise FileNotFoundError(err_msg)
+        if not Path(input_dir, input_test_file).exists():
+            err_msg = f"File '{Path(input_dir, input_test_file)}' doesn't exist"
+            raise FileNotFoundError(err_msg)
+        input_path = Path(input_dir, input_file)
+        input_test_path = Path(input_dir, input_test_file)
 
-    logger.info(f"Reading data from {input_path}")
-    logger.info(f"Reading data from {input_test_path}")
-    data = pd.read_csv(input_path)
-    data_test = pd.read_csv(input_test_path)
+        logger.info(f"Reading data from {input_path}")
+        logger.info(f"Reading data from {input_test_path}")
+        data = pd.read_csv(input_path)
+        data_test = pd.read_csv(input_test_path)
 
     if os.getenv("SHUFFLE_RAW_DATA"):
         logger.info("Merging train and test and shuffling rows to create new split")
@@ -72,7 +78,8 @@ def pipeline(
     target_col = params["target_col"]
 
     # Drop cols with 0 or less in the target
-    thresh = os.getenv("MIN_TARGET_THRESHOLD", default=0)
+    thresh = os.getenv("MIN_TARGET_THRESHOLD", default="0")
+    thresh = int(thresh)
     logger.info(
         f"Dropping all rows with target less or equal than {thresh}",
     )
