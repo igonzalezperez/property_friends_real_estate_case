@@ -1,57 +1,99 @@
+# Table of Contents
+- [Table of Contents](#table-of-contents)
+- [Property Friends Real Estate Case](#property-friends-real-estate-case)
+- [Software Requirements](#software-requirements)
+- [Initial Setup](#initial-setup)
+- [Running the app](#running-the-app)
+  - [Data and model setup](#data-and-model-setup)
+    - [1. Startup Docker](#1-startup-docker)
+    - [2. Build images and start containers](#2-build-images-and-start-containers)
+    - [3. Create a model artifact](#3-create-a-model-artifact)
+  - [App usage](#app-usage)
+    - [API key authentication](#api-key-authentication)
+    - [Testing endpoints](#testing-endpoints)
+- [Architecture and technical aspects](#architecture-and-technical-aspects)
+  - [Project structure](#project-structure)
+  - [ML](#ml)
+    - [Input Data](#input-data)
+    - [Data/ML Pipelines](#dataml-pipelines)
+      - [Make Dataset](#make-dataset)
+      - [Build Features](#build-features)
+      - [Train Model](#train-model)
+  - [App](#app)
+    - [Api key authentication](#api-key-authentication-1)
+    - [Predict](#predict)
+    - [Predict logs](#predict-logs)
+    - [Model run logs](#model-run-logs)
+  - [Code Standards and best practices](#code-standards-and-best-practices)
+- [Issues with the original notebook and improvements](#issues-with-the-original-notebook-and-improvements)
+- [Further improvements](#further-improvements)
+
+
 # Property Friends Real Estate Case
 
-Estimate property valuations
+Property Friends Real Estate Case is a FastAPI-based application designed to receive data with features of real estate properties and use a trained machine learning model to predict the price of the property. The model is based in the one trained in this notebook [Property-Friends-basic-model.ipynb](challenge/Property-Friends-basic-model.ipynb). The application's technical requirements are established in this document [Challenge.md](challenge/Challenge.md)
 
-Property Friends Real Estate Case is a FastAPI-based application designed to receive inputs and use a trained machine learning model to return predictions based on those inputs. The model is based in the one trained in this notebook [Property-Friends-basic-model.ipynb](challenge/Property-Friends-basic-model.ipynb). The application's technical requirements are established in this document [Challenge.md](challenge/Challenge.md)
+# Software Requirements
 
-## Software Requirements
-
-- Git, to clone the repository. For reference I used v2.30.1 in Windows.
-- Docker and Docker Compose for desktop. For reference I used Docker v24.0.5 and Docker Compose v2.20.2
+- Git, to clone the repository. For reference, I used v2.30.1 in Windows.
+- Docker and Docker Compose for desktop. For reference, I used Docker v24.0.5 and Docker Compose v2.20.2
 - Other requirements are handled within the container (e.g. python dependencies, databases) so the user/host doesn't need to install them.
 
-## Initial Setup
-**All CLI commands should be run at the root of the project, that is wherever the project was pulled with git, for example `Users/Admin/my_folder/property_real_estate_friends/` where the last folder is the default name of the project.**
+# Initial Setup
 
-1. Ensure git is installed in your system. You can check in your command-line interface (CLI) of preference (cmd, powershell, shell, etc) by running:
+1. Ensure git and docker are installed in your system. You can check in your command-line interface (CLI) of preference (cmd, powershell, shell, etc) by running:
 
     ```
     git --version
-    ```
-
-    The output should show something like `git version 2.30.1.windows.1`
-
-2. Clone the repository using Git.
-
-    ```
-    git clone https://github.com/igonzalezperez/property_friends_real_estate_case.git
-    ```
-
-3. Ensure Docker and Docker Compose are installed on your system. You can check with the following CLI commands:
-    ```
     docker --version
     docker-compose --version
     ```
-    The output should show something like `Docker version 24.0.5, build ced0996` and `Docker Compose version v2.20.2-desktop.1`
 
-4. Create a `.env` file in the project's root directory using the values from [.env.example](.env.example). You can do this through CLI with `copy .env.example .env` on Windows or `cp .env.example .env` on Unix-based systems (macOS, Linux).
+    The output should show something like `git version 2.30.1.windows.1`, `Docker version 24.0.5, build ced0996` and `Docker Compose version v2.20.2-desktop.1`.
+
+2. Clone the repository using Git and move to the root directory.
+
+    ```
+    git clone https://github.com/igonzalezperez/property_friends_real_estate_case.git
+    cd property_friends_real_estate_case
+    ```
+    All CLI commands from now on should be run at the root of the project.
+
+3. Create a `.env` file in the project's root directory using the values from [.env.example](.env.example). You can do this through CLI commands with 
+    ```
+    copy .env.example .env
+    ```
+    for Windows, and
+    ```
+    cp .env.example .env
+    ```
+    for Unix-based systems (macOS, Linux).
    
-5. Original data is not included in the repo, so you must have the raw data locally. Place your `train.csv` and `test.csv` files in the [ml/data/raw/](ml/data/raw/) folder.
+4. If you have the original `train.csv` and `test.csv` files, place them in the [ml/data/raw/](ml/data/raw/) folder. Otherwise, there are [train.csv.example](ml/data/raw/train.csv.example) and [test.csv.example](ml/data/raw/test.csv.example) files with minimal data for the project to work, although results will not be meaningful or comparable to original notebook, you can copy them and rename the example files to `train.csv` and `test.csv` respectively (the example data is based on the original data schema but rows themselves are fake). You can do it manually or through CLI with the following commands in Windows and Unix respectively:
+    ```
+    copy ml/data/raw/train.csv.example ml/data/raw/train.csv
+    copy ml/data/raw/test.csv.example ml/data/raw/test.csv
+    ```
 
-## Running the app
-### Data and model setup
-#### 1. Startup Docker
+    ```
+    cp ml/data/raw/train.csv.example ml/data/raw/train.csv
+    cp ml/data/raw/test.csv.example ml/data/raw/test.csv
+    ```
+
+# Running the app
+## Data and model setup
+### 1. Startup Docker
 Open the Docker desktop app and wait until it finishes loading, it should take a couple seconds.
 
-#### 2. Build images and start containers
+### 2. Build images and start containers
 Run this command to build and start the docker containers:
 ```
 docker-compose up -d --build
 ```
-This will take about a minute when run for the first time. The process runs two containers, one for the app itself and another one for the postgres database, the logs for each one upon startup can be inspected with:
+This will take about a 2 minutes when run for the first time. The process runs two containers, one for the app itself and another one for the postgres database, the logs for each one upon startup can be inspected with:
 ```
 docker-compose logs app
-docker-comose logs db
+docker-compose logs db
 ```
 And they should look like this:
 
@@ -91,7 +133,15 @@ db  | running bootstrap script ... ok
   </code></pre>
 </details>
 
-#### 3. Create a model artifact
+At this point, both the API and the DB containers are available, and endpoints can receive requests, but we don't have a model yet so we'll create one first. Alternatively, you can check the endpoints now at <http://localhost:8080/docs> and check that the endpoints correctly handle requests when there is no model available.
+
+> The app relies on the .env file, which is loaded when starting the container, if an environment variable needs to be changed the container must be restarted, this can be done with the following commands:
+```
+docker-compose down
+docker-compose up -d
+```
+
+### 3. Create a model artifact
 Run ML pipelines to setup postgres DB tables, load data, transform it, train predictive model and store it. First we need to open a CLI within the container with this command:
 ```
 docker exec -it app /bin/bash
@@ -100,7 +150,7 @@ The CLI will display something like `root@b2e2a41e9a7c:/real-estate-price-predic
 ```
 make ml-pipeline
 ```
-When the pipeline finishes (~1 minute), the model will be stored and available for the API endpoints. At the end of the process these logs should appear:
+When the pipeline finishes (~1 minute), the model and it's logs will be stored and available for the API endpoints. At the end of the process these logs should appear:
 
 ```
 Scheduled 3 tasks of which:
@@ -113,6 +163,10 @@ This progress looks :) because there were no failed tasks or missing dependencie
 
 ===== Luigi Execution Summary =====
 ```
+You can exit the container CLI by entering `exit`.
+
+*In order to train a new model, you can run `make ml-pipeline-base`, this will log a new model, so there are two models in the history, and it will replace the active one, which is the one consumed by the API. Running just `make ml-pipeline` again won't do anything (see [Data/ML Pipelines](#data/ml-pipelines)).*
+
 The complete logs can be inspected below.
 <details>
   <summary><i>make ml-pipeline</i>. Click to expand/collapse</summary>
@@ -292,60 +346,96 @@ This progress looks :) because there were no failed tasks or missing dependencie
   </code></pre>
 </details>
 
-### App usage
-#### Docs page
+## App usage
 Go to <http://localhost:8080/docs> in your browser, this will show the docs of the API using the [swagger UI](https://petstore.swagger.io/?_gl=1*khokz4*_gcl_au*ODA0MDEyODA3LjE3MDU5MzM4OTA.&_ga=2.217028630.1810789167.1705933890-78166333.1705933890), in there you can test all the endpoints.
 
-#### API key authentication
-1. Upon starting the app, a valid API key will be created and stored at `app/valid_keys/api_keys.json`, you can copy the API key in there and paste it when prompted for it in the Authorize button of the UI.
+### API key authentication
+Upon starting the app, a valid API key will be created and stored at `app/valid_keys/api_keys.json` (the `valid_keys` folder is automatically created so it's not in the repo), you can copy the API key in there and paste it when prompted for it in the Authorize button of the UI.
 
 <img src="assets/swagger_authorize.png" alt="Swagger Authorize Button" width="800" height="380">
-Click on the Authorize button.
-<img src="assets/swagger_token_input.png" alt="Swagger Token Prompt" width="800" height="380">
-A prompt will appear, paste the valid API key and click on Authorize.
-<img src="assets/swagger_authenticated_prompt.png" alt="Swagger Authenticated" width="500" height="250">
-<br>
-Close the prompt.
-<br>
-<img src="assets/swagger_auth_ok.png" alt="Swagger Authorize Ok" width="190" height="120">
-<br>
-Now the Authorize button shows a locked padlock which means all of our requests will be authenticated.
-<br>
+Click on the Authorize button, a prompt will appear, paste the valid API key and click on Authorize, then close the prompt window.
+Now the Authorize button will show a locked padlock which means all of our requests will be authenticated.
 
 ### Testing endpoints
+
+> All API endpoints have the `/api/v1/` prefix for better versioning, but I will almost always refer to them without this prefix for brevity.
+
 Click on the swagger endpoint entries, each one will show the following:
 - **Docs**: Endpoint description, input, output and http exceptions.
 - **Parameters**: Endpoint parameters if it has any.
 - **Request body**: An example of a valid http request for that endpoint.
-- **Curl and request URL**: When testing the endpoint, it will show the request being sent (curl command), the endpoint route and the response. If needed, the `curl` command can be copied and pasted to test the endopints through CLI or some other platform like Postman.
+- **Curl and request URL**: When testing the endpoint, it will show the request being sent (curl command), the endpoint route and the response. If needed, the `curl` command can be copied and pasted to test the endpoints through CLI or some other platform like Postman.
 - **Responses**: Possible endpoint responses, either 200 (successful) or errors.
 
-Each endpoint has a "Try it out" button, press it and then press the "Execute" button to test the endpoint with a pre-filled payload.
-
-<img src="assets/try_it_out.png" alt="Try it out button" width="800" height="380">
-Click on the Authorize button.
-<img src="assets/execute.png" alt="Execute button" width="800" height="380">
+Each endpoint has a "Try it out" button, press it and then press the "Execute" button to test the endpoint. The UI comes with a sample body, which can be edited to try with other values.
 
 These are the available endpoints:
 - **/api/v1/predict**: POST a payload containing a row of the model's inputs to receive a price prediction.
-- **/api/v1/health**: GET the health status of the application, specifically checks the /predict endpoint.
-- **/api/v1/predict-logs?limit=10**: GET last N recent calls to the predict endpoint. Where N is received as a parameter in the request
-- **/api/v1/model-runs**: GET metadata of MLFlow model training instances.
+  - *Body*: A dict with all the feature data columns (i.e. excluding the price) and their respective values:
+  ```
+  {"type": "string","sector": "string","net_usable_area": 0,"net_area": 0, "n_rooms": 0,"n_bathroom": 0,"latitude": 0,"longitude": 0}
+  ```
+  - *Response 200*: A model prediction: `{"prediction": 0}`
+  - *Response 403*: User didn't provide a valid API key.
+  - *Response 422*: Invalid body.
+  - *Response 503*: The model doesn't exist or isn't available.
+  - *Logging*: The implementation of this route has a background task that logs each successful call, storing payload, response and timestamp of request at `app/logs/model_predictions.json`, the folder is created automatically so it's not in the repo. This is later consumed by `/api/v1/predict-logs`.
+- **/api/v1/health**: GET the health status of the application, specifically checks the `/predict` endpoint.
+  - *Response 200*: `/predict` health status: `{"status": true/false}`
+  - *Response 403*: User didn't provide a valid API key.
+- **/api/v1/predict-logs?limit=10**: GET last N recent calls to the predict endpoint. Where N is received as a parameter in the request. Logs contain the prediction body, response and timestamp of request.
+  - *Parameters*: 
+    - `limit`: Number of last logs to get.
+  - *Response 200*: `[{"input": [{"type": "string","sector": "string","net_usable_area": 0,"net_area": 0,"n_rooms": 0,"n_bathroom": 0,"latitude": 0,"longitude": 0}],"result": 0,"date": "2024-01-23T14:14:28.796Z"}]`
+  - *Response 403*: User didn't provide a valid API key.
+  - *Response 422*: Invalid parameter.
+- **/api/v1/model-runs**: GET metadata of MLFlow model training instances. Most recent models are shown first.
+  - *Response 200*: Logs of training instances saved by MLFlow
+    <details><summary>200 response example</summary>
+    <code><pre>
+      [
+        {
+          "run_id": "string",
+          "experiment_id": "string",
+          "status": "string",
+          "artifact_uri": "string",
+          "start_time": "2024-01-23T14:14:28.802Z",
+          "end_time": "2024-01-23T14:14:28.802Z",
+          "metrics_mean_absolute_error_train": 0,
+          "metrics_mean_absolute_percentage_error_train": 0,
+          "metrics_root_mean_squared_error_train": 0,
+          "metrics_mean_absolute_error_test": 0,
+          "metrics_mean_absolute_percentage_error_test": 0,
+          "metrics_root_mean_squared_error_test": 0,
+          "params_n_estimators": "string",
+          "params_random_state": "string",
+          "params_loss": "string",
+          "params_max_depth": "string",
+          "params_learning_rate": "string",
+          "tags_mlflow_runName": "string",
+          "tags_mlflow_source_name": "string",
+          "tags_mlflow_user": "string",
+          "tags_mlflow_source_type": "string",
+          "tags_mlflow_log_model_history": "string"
+        }
+      ]
+    </code></pre>
+    </details>
+  - *Response 403*: User didn't provide a valid API key.
 
-The endpoint descriptions here are kept brief because that's what <http://localhost:8080/docs> is for, you can read the details there.
+The endpoint docs are more exhaustive at <http://localhost:8080/docs> so you should check them there too.
 
 Since we passed the API key earlier, all of our requests will be successful. To test that the API authentication is actually enforced you can go to the Authorize button and logout, then try out each endpoint and see that all get a `403 Error: Forbidden` response.
 
 Finally, at the bottom of the docs the different Schemas used can be found, these define in more detail the endpoint's inputs and outputs such as a model input or model response.
 
-
-*Obs: There are also endpoint docs at <http://localhost:8080/redoc> which is just a different format to swagger but the information and features are the same.*
-
+> There are also endpoint docs at <http://localhost:8080/redoc> which is just a different format to swagger, but the information and features are the same.
 
 # Architecture and technical aspects
 ## Project structure
-A diagram of the project's architecture is shown below.
-![Project's Architecture](assets/project_architecture.png)
+A diagram of the project's architecture is shown below, the project can be largely divided in ML and App, where ML generates artifacts for the App to consume. Everything lives within Docker containers, so it's easily reproducible and scalable.
+![ML Architecture](assets/ml_architecture.png)
+<img src="assets/app_architecture.png" alt="API Architecture" width="600"/>
 
 Also the project's folders were defined using a [cookiecutter wrapper for fastapi](https://github.com/arthurhenrique/cookiecutter-fastapi). Below is the tree of the relevant files.
 
@@ -386,40 +476,145 @@ Also the project's folders were defined using a [cookiecutter wrapper for fastap
     |       |                        # targets, transformations and model params
     |       └── train_models.py      # Train model using trained preproc_pipeline
     |                                # and interim data
-    ├── tests            # Unit and integration tests
+    ├── tests            # Unit and integration tests (placeholder)
+    ├── .env.example      # Environment variables
     ├── docker-compose.yml
     ├── Dockerfile
     ├── Makefile         # Define useful commands to run pipelines
     ├── pyproject.toml   # Project's dependencies
     └── poetry.lock      # Project's dependencies
+
+The `.env.example` has all of the environment variables which will work out of the box to run the app, for reference I'll leave the variables below with a short description of what they do.
+
+<details>
+  <summary><i>Environment variables</i>. Click to expand/collapse</summary>
+<pre><code>
+
+    DEBUG=True  # Changes logging level
+
+    PRE_LOAD=True  # Whether to try and load the model on startup
+
+    # DEFAULT FOLDERS AND FILE NAMES
+    ML_DIR=ml
+    ML_DATA_DIR=ml/data
+    ML_MODELS_DIR=ml/models
+
+    INTERIM_DATA_PREFIX=interim
+    PROCESSED_DATA_PREFIX=processed
+
+    TRAIN_FILE_NAME=train.csv
+    TEST_FILE_NAME=test.csv
+
+    BASE_MODEL_NAME=model.pkl
+    PREPROC_FILE_NAME=preproc_pipeline.joblib
+
+    # DATA PROCESSING
+    SHUFFLE_RAW_DATA=False  # Whether to merge train and test files and create a new train-test split
+    MIN_TARGET_THRESHOLD=0  # Threshold for the target value, targets less or equal than this are dropped
+    TEST_PREDICT=True  # whether to predict on test set after training
+
+
+    # MLFLOW
+    MLFLOW_TRACKING_URI=sqlite:///ml/models/mlflow/mlflow.db
+    MLFLOW_ARTIFACT_ROOT=file:ml/models/mlflow/mlruns
+
+    # DB
+    USE_DB=True  # Use postgres db if true or local .csv files if false
+    DB_USER=postgres_user
+    DB_PASSWORD=postgres_pw
+    DB_NAME=postgres_db
+  </code></pre>
+</details>
+
+
 ## ML
+> Some decisions taken here are informed by the analysis shown in [Issues with the original notebook and improvements](#issues-with-the-original-notebook-and-improvements) so it might be worth reading that first
 ### Input Data
 The client would like to eventually connect the app to their databases, since the data can be represented as regular tables (DataFrames), it makes sense to use a relational database, so I chose PostgreSQL.
 
-The [make_dataset.py](ml/pipelines/make_dataset.py) script checks if the table `raw_data` exists and if it's empty, if so then it populates with `train.csv` and `test.csv`. The table has an extra column `is_train` to indicate from which dataset came each row and preserve the train-test split if necessary.
+The [make_dataset.py](ml/pipelines/make_dataset.py) script checks if the table `raw_data` exists to create it and if it's empty in which case it populates with `train.csv` and `test.csv`. The table has an extra column `is_train` to indicate from which dataset came each row and preserve the train-test split if necessary.
 
 ### Data/ML Pipelines
-The framework used to orchestrate the data/ml pipelines is [Luigi](https://luigi.readthedocs.io/en/stable/running_luigi.html) which is package that helps you build complex pipelines of batch jobs, developed by spotify. I chose it because it's very simple and easy to use. I considered using Airflow, [but it seems to have heavy of requirements when using Docker](https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html) and [some issues when installed through dependency managers other than pip](https://airflow.apache.org/docs/apache-airflow/2.1.2/installation.html) (poetry), I also considered [Prefect](https://www.prefect.io/), but it had a dependency conflict with FastAPI dependencies and I'd rather prioritize FastAPI dependencies.
+ML pipelines are orchestrated with [Luigi](https://luigi.readthedocs.io/en/stable/running_luigi.html) which is a package that helps build complex pipelines of batch jobs, developed by Spotify. I chose it because it's very simple and easy to use. I considered using Airflow, [but it seems to have heavy of requirements when using Docker](https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html) and [some issues when installed through dependency managers other than pip](https://airflow.apache.org/docs/apache-airflow/2.1.2/installation.html) (in this case poetry), I also considered [Prefect](https://www.prefect.io/), but it had a dependency conflict with FastAPI dependencies and I'd rather prioritize FastAPI dependencies.
 
-Luigi works by defining "Tasks", all of which have a set of inputs and outputs, and a process inbetween, so Luigi checks if the output exists for the task, if not then the task is run, if it exists the tasks is considered finished. This makes Luigi idempotent, that is if I run a task succsefully once, the next runs will have no effect because the output already exists. Additionally Luigi allows for task dependency, so the pipeline can be defined in a straitforward manner like this: `make_dataset > build_features > train_model`. So running `train_model` task will trigger the previous dependencies.
+Luigi works by defining "Tasks", all of which have a set of inputs and outputs, and a process inbetween. Luigi checks if the outputs exist for the task, if not then the task is run otherwise the task is considered finished. This makes Luigi `idempotent`, that is if I run a task succsefully once, the next runs will have no effect because the output already exists. Additionally Luigi allows for task dependency, so the pipeline can be defined in a straitforward manner like this: `make_dataset > build_features > train_model`. So running `train_model` task will trigger the previous dependencies.
+
+Additionally, I used the [MLFow](https://mlflow.org/docs/latest/index.html) library to efficiently monitor and log each training run. It allows to store artifacts, metrics and metadata. There's also the option to run an MLFlow server to explore the runs within a UI, but I don't use that feature here.
+
 
 The parameters used to create features and train the model are abstracted into [ml/pipelines/pipeline_config.yml](ml/pipelines/pipeline_config.yml), so it's easy to try new setups just by editing it.
 
+> The fact that Luigi is idempotent can be annoying when developing, so there's a command that runs the pipelines outside of Luigi: `make ml-pipeline-base`, also there are commands to run each step in isolation: `make make-datest`, `make build-features`, `make train-model`. All of these overwrite whatever was run previously. Note this commands are used within the container.
 #### Make Dataset
-Loads the original .csv files. If DB is empty, it loads the data to the `raw_data` table. This step is meant to then be used for data cleaning, in this case it only removes rows with `price = 0` and then saves the output to [ml/data/interim/](ml/data/interim/). It can also re-shuffle the dataset to create a new train-test split, but this is not enabled by default.
+- Input: Original .csv files at [ml/data/raw/](ml/data/raw/) or postgres `raw_data` table, depending on `.env` settings.
+- Transform:
+  - If `raw_data` table doesn't exist in the db, it populates it with the .csv data.
+  - If set in .env, it can merge train and test and reshufle, otherwise it preserves the original train-test split, which is the default.
+  - Clean raw data, for now it removes rows with `price = 0`, but it can be easily extended to perform more data cleansing tasks.
+- Output:
+  - .csv files in [ml/data/interim/](ml/data/interim/).
 
 #### Build Features
-Loads the output of `make_dataset` and fits a preprocessing sklearn pipeline using the defined parameters in [ml/pipelines/pipeline_config.yml](ml/pipelines/pipeline_config.yml), namely the TargetEncoder. It saves the fitted pipeline in [ml/models/](ml/models/) as well as the transformed data (`pipeline.transfrom(data)`), the latter is stored just in case, it's not used later. Since the challenge states that the idea is just to productivize the original model, [ml/pipelines/pipeline_config.yml](ml/pipelines/pipeline_config.yml) only includes a categorical column transformer. There's also a numerical transformer with a StandardScaler commented out, it can be uncommented to use a more robust model.
+- Input: .csv files at [ml/data/interim/](ml/data/interim/) and pipeline config at [ml/pipelines/pipeline_config.yml](ml/pipelines/pipeline_config.yml).
+- Transform:
+  - Fits the preprocessing pipeline with the input data.
+  - Depending on the config it can fit specific column transformers to specific columns. By default it uses TargetEncoder in the columns `type` and `sector`, as the original model. A numerical transformer with StandardScaler is commented out in the config, it can be uncommented to run a more robust model.
+- Output:
+  - Fitted pipeline as a .joblib file at [ml/models/](ml/models/)
+  - .csv of transformed data (`piepeline.transform()`) at [ml/data/processed/](ml/data/processed/). These files are not used later, only the pipeline artifact.
 
 #### Train Model
-Loads the data at [ml/data/interim/](ml/data/interim/), the fitted preprocessing pipeline at [ml/models/](ml/models/) and trains the model with the parameters in [ml/pipelines/pipeline_config.yml](ml/pipelines/pipeline_config.yml).
+- Input: .csv files at [ml/data/interim/](ml/data/interim/), fitted preprocessing pipeline at [ml/models/](ml/models/) and config at [ml/pipelines/pipeline_config.yml](ml/pipelines/pipeline_config.yml).
+- Transform:
+  - Train the model with its parameters, both defined in the config file. It's the same model and parameters as in the original notebook, a `random_state` value is added for reproducibility.
+  - Monitor and log training using MLFlow framework
+- Output:
+  - Training run at [ml/models/mlflow/mlruns](ml/models/mlflow/) (autogenerated folder), it contains all the model artifacts and metadata. Stores each different run in a different folder so all runs are available.
+  - Write logs to sqlite db (autogenerated file) at [ml/models/mlflow/mlflow.db](ml/models/mlflow/). This is consumed by the `/model-runs` endpoint.
+  - Model artifact and metadata at [ml/models/trained_model](ml/models/trained_model/). In there is stored `model.pkl`, which is consumed by the `/predict` endpoint.
 
-## API
-For the API I used FastAPI because of its ease of use and automatic documentation with swagger. Along with 
-The MLFlow framework is used to log model training, this tool allows to create artifacts, metrics and metadata every time a training is performed, so all runs of the model are stored. All runs are saved in [ml/models/mlflow/](ml/models/mlflow/), specifically in the folder mlruns where artifacts are stored and it also instantiates a sqlite db for logs and metadata, which can be queried. This information is used by the `/model-runs` endpoint. Finally the most recent model is always stored at [ml/models/trained_model](ml/models/trained_model/) which contains a `model.pkl` file which is the one consumed by the API.
+Notice the database is only used for reading raw data, the intermediate steps are still stored as files, this could be improved in the future by creating more tables in the db with the same purposes as the `interim` and `processed` folders, and always read from and write to the database.
 
+## App
+For the RESTful API I used FastAPI because of its ease of use and automatic documentation with swagger.
 
-## Issues with the original notebook and improvements
+### Api key authentication
+A simple api key authentication middleware ([app/core/middleware/](app/core/middleware/)) was implemented, when the app starts it creates a `.json` file like this one:
+```
+{"user_id": {"api_key": "my_api_key", "created_at": "2024-01-23 00:29:07.395316"}}
+```
+The addition of a created_at field allows for further improvements of api-key rotation, also the use of `user_id` as a key allows to set different api keys for different users or groups of users and implement a more complex authentication.
+
+I used a `.json` file because it can easily be dumped into a database.
+
+### Predict
+The predict implementation is straightforward, each time the endpoint is called, a `model.predict()` is ran. The app is configured to look for the `model.pkl` when it starts, if it doesn't exists then it's loaded when a request is made. Additionally I added a health check for troubleshooting.
+
+### Predict logs
+Each call to `/predict` is logged through a background tasks that saves the payload, response and date of request. This is stored as a `.json` (i.e. a list of dicts), an its consumed by the `/predict-logs` endpoint. I used the .json format and not a plain text log because it's easier to consume for an HTTP response, it would also be straghtforward to add a `predict_logs` table in the DB to have a more robust storage, or read the data as a DataFrame.
+
+Notice the structure of these logs would not yield a normalized database since it has nested dictionaries, so they could be either stored in multiple normalized tables and then use join operations to get the complete logs, or directly use a NoSQL database.
+
+### Model run logs
+Since MLFlow stores every training of the model, I implemented `/model-runs` endpoint, which goes to [ml/models/mlflow/mlflow.db](ml/models/mlflow/) and gets the logs of all runs, including test metric scores and metadata. Since the data is already in a db, it can be easily included in the postgres db as a new table.
+
+## Code Standards and best practices
+- Python version 3.11
+- Dependency management through `poetry 1.6.1`. There are dependency groups for `main` and `dev` dependencies, so the `dev` dependencies can be omitted in production environments.
+- All modules, classes and functions have docstrings to explain their functionality. The `one-line-sphinx` docstring format is used, except in the API routes where I used a custom format with markdown for better readability in the Swagger UI.
+- A Makefile is used to wrap some commands for simplicity, namely the ML pipelines, CI/CD pipelines, tests, builds, etc.
+- A [CI/CD pipeline](.github/workflows/ci.yaml) is defined to be run as a github action every time there's a push. This ensures code is consistently good and any issues will be raised when the pipeline fails. Tools configuration is at [config/](config/).
+  - *format*: `isort` and `black`
+  - *lint*: `flake8`, `pylint` and `mypy`
+  - *security*: `bandit`
+  - *tests*: Although there are no actual tests (only a placeholder) in the project, it's set to run them automatically when added
+  - By adding more commands in the Makefile, it would be straightforward to add more to the pipline, like docker builds, data testing and so on.
+- Environment variables are abstracted into a `.env` file for flexibility.
+- The API and the ML part are almost completely decoupled, the only requirement is for the ML outputs to exist, which makes easier to expand functionalities in each module without affecting the other. Also, within each component everything is modularized so it can be easily refactored to add new features.
+- All the app resides in Docker, so it's reproducible and scalable.
+- Since this is a small project I only worked in the main branch, but generally I would have main, dev and feature branches at least, using a [gitflow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow#:~:text=What%20is%20Gitflow%3F,by%20Vincent%20Driessen%20at%20nvie.) approach
+
+# Issues with the original notebook and improvements
 The [input notebook](challenge/Property-Friends-basic-model.ipynb) has several inconsistencies which are described below:
 - Train cols are defined with 
     ```
@@ -427,43 +622,80 @@ The [input notebook](challenge/Property-Friends-basic-model.ipynb) has several i
     col for col in train.columns if col not in ['id', 'target']
     ]
     ```
-but neither `"id"` not `"target"` are present in the data so it doesn't do anything, so `train_cols` contains all of the original columns, including the target (`"price"`) which is an important oversight. `"target"` was probably mistaken with the variable `target` which is defined afterwards.
-- Categorical transformer TargetEncoder relies on the targets to fit the categorical features, so information leakage from the target variable could be a problem.
-- The sklearn preprocessing pipeline defines only a categorical column transformer, which means the numerical features are not used at all in the model. This could have been a decision and not an oversight, but it would be weird not to use information like `net_usable_area` which I would presume influences the price of an estate. Luckily, this cancels out the earlier problem of including the target in the features, since all numerical columns discarded.
+    but `"id"` and `"target"` are not in the data, so `train_cols` contains the original columns, including the target (`"price"`) which is an important oversight. `"target"` was probably mistaken with the variable `target` which is defined afterwards.
+- TargetEncoder relies on the targets to fit the categorical features, so information leakage from the target variable could be a problem.
+  
+- Another potential issue with TargetEncoder is that by default, when an unkown category is used as an input for prediction, [it defaults to the target mean](https://contrib.scikit-learn.org/category_encoders/targetencoder.html), that is if the input `"type"` and `"sector"` are gibberish, it will still process them and then the model will yield a prediction. This could be solved through data testing and ensuring data integrity before the data reaches the model. Notice this issue can also be raised for numerical variables (they can receive any input), but this is more reasonable since they are floats, not categories and the transformation would not default to a constant value.
+  
+- The sklearn preprocessing pipeline defines only a categorical column transformer, which means the numerical features are not used at all in the model. This could have been a decision and not an oversight, but it would be weird not to use information like `net_usable_area` which I would presume influences the price of an estate. Luckily, this cancels out the earlier problem of including the target in the features, since all numerical columns discarded anyway.
 
   A very simple improvement would be to use a numerical column transformer with a StandardScaler so we make use of all the features. Then, a more exhaustive feature engineering phase can be carried out.
-- The GradientBoostingRegressor class accepts a `random_state` variable which is not set, this is not a big deal but it affects reproducibility.
-- The way in which the metrics functions are called is incorrect, according to the sklearn documentation, the correct way to call them is `metric_func(y_true, y_pred)`, while the notebook does the opposite `metric_func(y_pred, y_true)`. `RMSE` and `MAE` are symmetric so they evaluate the same in both cases, but `MAE` results do change. 
-- The `MAPE` metric can be problematic, while experimenting with the data, I calculated the MAPE for the train data, and it happens to be infinity. This is due to a combination of a possible problem with the data and how the metric is implemented in sklearn, `MAPE` is calculated as:
-  \[
-  \text{MAPE}(y_{\text{true}}, y_{\text{pred}}) = \frac{1}{n} \sum_{i=1}^{n} \left| \frac{y_{\text{true}, i} - y_{\text{pred}, i}}{max(\epsilon, y_{\text{true}, i})} \right|
-  \]
 
+- The GradientBoostingRegressor class accepts a `random_state` variable which is not set, this is not a big deal but it affects reproducibility.
+  
+- The way in which the metric functions are called is incorrect, [according to the sklearn documentation](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.metrics), the correct way to call them is `metric_func(y_true, y_pred)`, while the notebook does the opposite: `metric_func(y_pred, y_true)`. `RMSE` and `MAE` are symmetric so they evaluate the same in both cases, but `MAPE` results do change because it divides by the first argument, which should be `y_true`. 
+  
+- The `MAPE` metric can be problematic, while experimenting with the data I calculated the MAPE for the train set, and it happens to be infinity. This is due to a combination of a possible problem with the data and how the metric is implemented in `sklearn`. `MAPE` is calculated as:<br>
+  $MAPE(y_{true}, y_{pred}) = \frac{1}{n} \sum_i \left| \frac{y_{\text{true}, i} - y_{\text{pred}, i}}{max(\epsilon, y_{\text{true}, i})} \right|$
+  <br>
   Notice the denominator takes the max between $\epsilon$ and $y_{\text{true}, i}$ where $\epsilon$ is the smallest value that python can generate (`np.finfo(np.float64).eps`), that is a non-zero value just so the formula doesn't throw an error when $y=0$ but it will still yield an incredibly high result for the metric (unless the target and pred difference happens to be very small too).
 
-  This made me notice that there was a row with `price = 0` in the train data, which is a very convenient price for an estate, so it needs to be removed for `MAPE` to work properly.
-- The previous point also makes me question the integrity of the price data in particular, the minimum price values are around 10^1, while the top 75% are 10^4. I don't know the units but I would guess if they were changed it was through a linear transformation, so if the cheapest property were to cost 10 million CLP (a very low estimate for an estate in Chile), then the maximum would cost about 10.000 million CLP which is huge and is not even the maximum. So I would inspect if the lowest values are outliers or just bad data.
+  This made me notice that there was a row with `price = 0` in the train data, which is a very convenient price for an estate, but probably a wrong one, so it needs to be removed for `MAPE` to work properly.
+
+- The previous point also makes me question the integrity of the price data, the minimum price values are around $10^1$, while the top $75$% are $10^4$. Units are not specified, but if I had a low estimate $10$ million CLP (a very low estimate for an estate in Chile), then the maximum would cost about $10.000$ million CLP which is huge and is not even the maximum value, this is not necessarily the case since as I said, the units or processing of the target column is not mentioned. Either way, I would inspect if the lowest values are outliers or just bad data.
+  
+  In general, it would be worth checking data integrity for all columns, for example below is a plot (with fake data) of the real estate locations, where there are weird locations that could be wrong data (in the middle of the mountains) which could be filtered out.
 - The training should be done in a more robust way, namely using validation sets and some cross-validation strategy like K-fold cross-validation, so the metrics are more reliable.
 
 
-Some of the issues mentioned are tackled in the app's data pipelines. A revised notebook with corrections can be found [here].(notebooks/Property-Friends-basic-model-fixed.ipynb). The specific changes are these:
+![Location Map](assets/example_map.jpg)
+
+Some of the issues mentioned are tackled in the app's data pipelines. A revised notebook with corrections can be found [here](notebooks/Property-Friends-basic-model-fixed.ipynb). Notebooks are meant to be run locally (outside the container) so you'll need to have python installed to run them, although the output is shown in the remote version and the important results are here.
+
+
+The specific changes are these:
 
 - Explicitly define feature, numerical, categorical and target columns (see [pipeline_config.yml](ml/pipelines/pipeline_config.yml)).
 - Include a numerical column transformer using StandarScaler.
 - Include the `random_state` parameter for the GradientBoostingRegressor.
-- Compute metrics as `metric_func(y_true, y_pred)`.
+- Compute metrics as `metric_func(y_true, y_pred)`, not the other way around.
 - Drop the single row with `price = 0`. Low but non-zero price rows are kept.
 
 Below are the notebook results for comparison, we can see that the model improves noticeably with very simple corrections. Also notice the corrected metric calculations change the original model's MAPE greatly, from $0.4$ to $0.75$.
 
-| Metric | Original Model | Revised Model |
-| ------ | -------------- | ------------- |
-| RMSE   | 10254.16       | 5677.22       |
-| MAPE   | 0.75           | 0.67          |
-| MAE    | 5859.37        | 2605.25       |
+| Metric | Original Model <br> (base notebook) | Original Model <br> (corrected metrics) | Revised Model |
+| ------ | ----------------------------------- | --------------------------------------- | ------------- |
+| RMSE   | 10254.16                            | 10254.16                                | 5677.22       |
+| MAPE   | 0.40                                | 0.75                                    | 0.67          |
+| MAE    | 5859.37                             | 5859.37                                 | 2605.25       |
 
-**Original model pipeline**
+
+
+**Original model pipeline** <br>
 ![Original model](assets/original_model.png)
-
-**Revised model pipeline**
+<br>
+**Revised model pipeline**<br>
 ![Revised model](assets/revised_model.png)
+
+# Further improvements
+Here I'll list things that I think should be implemented to have a production ready app to be used in a real scenario:
+- Add/refactor endpoints:
+  - `/predict/batch`: Same as predict but for multiple rows of data.
+  - `/predict-logs` and `/model-runs`: These are used mostly for demonstration, logs should be handled internally or with a separate dedicated service, so they can be removed. Additionally, logs could include the metadata of the model used for each call.
+  - `/train`: Trigger a training of the model, this could be split into several endpoints to trigger different pipelines (train model, build features or make dataset).
+  -  `/model-info`: Shows metadata of model currently being used.
+  -  `/upload`: Upload new data, with targets.
+- Add unit and integration tests.
+  - Test all posible http responses for each API endpoint.
+  - Test outputs for all of the ML pipeline steps.
+  - Add data tests to check for integrity.
+- Add some kind of data versioning like [dvc](https://dvc.org/doc/api-reference) to monitor changes in data.
+- Optimize docker images to reduce size. There are volume mounts used only for dev purposes. Also the Dockerfile is meant for developing, since it installs all poetry dependencies, but there are groups for dev libraries which can be excluded. The python dependencies could even be packaged into a `.whl` file to be installed as a package and reduce overhead.
+- Use mulit-stage Dockerfile to define different environments (dev, staging and prod), likewise, add docker-compose files with build targets for each Dockerfile stage.
+- Add more robust ci/cd, including docker builds and testing. Also differentiate actions such as push to main, push to dev, etc.
+- Use cloud based storage in general.
+  - Store the data in some remote db, also configure data encryption in each step of the pipeline.
+  - Store the environment variables and api keys in a secure vault or some secrets manager which can manage password rotation.
+  - Use logging managers to store logs and set rules for rotation.
+- Implement more robust model monitoring, for example using Grafana and Prometheus. Also check for data drifting and possibly schedule/trigger retrainings of the model.
+- Orchestrate containers using Kubernetes for scalability.

@@ -31,6 +31,7 @@ def save_to_json(
     }
     try:
         with open(file_path, "r+", encoding="utf-8") as stream:
+            # Load current logs
             try:
                 data = json.load(stream)
                 if not isinstance(data, list):

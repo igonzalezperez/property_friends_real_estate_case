@@ -5,6 +5,8 @@ checking the health of the model.
 It includes the following routes:
 - `/predict`: Takes input data, makes predictions, and returns the result.
 - `/health`: Checks the health of the model by performing a test prediction.
+- `/predict-logs`: Gets the last calls of /predict, including request body,
+response and date of request.
 """
 import datetime
 import json
@@ -53,7 +55,12 @@ def get_prediction(data_point: pd.DataFrame) -> NDArray[np.float64]:
     "/predict",
     response_model=ModelResponse,
     name="predict:get-inference",
-    responses={403: {"description": "Forbidden"}},
+    responses={
+        403: {"description": "Forbidden"},
+        503: {
+            "description": "Model not available",
+        },
+    },
     dependencies=[Depends(token_auth_scheme)],  # api token authentication
 )
 async def predict(
@@ -93,6 +100,8 @@ async def predict(
             result=prediction,
         )
     except PredictException as err:
+        raise HTTPException(status_code=503, detail=f"Exception: {err}") from err
+    except FileNotFoundError as err:
         raise HTTPException(status_code=503, detail=f"Exception: {err}") from err
     return ModelResponse(prediction=prediction)
 

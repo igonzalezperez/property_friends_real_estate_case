@@ -98,6 +98,9 @@ target/
 app/logs/
 ml/logs/
 ml/data/db
-ml/models/trained_model/
 mlruns/
+ml/models/trained_model/conda.yaml
+ml/models/trained_model/MLModel
+ml/models/trained_model/python_env.yaml
+ml/models/trained_model/requirements.txt
 app/valid_keys/

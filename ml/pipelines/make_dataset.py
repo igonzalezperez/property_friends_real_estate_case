@@ -15,34 +15,38 @@ Usage:
 """
 import os
 from pathlib import Path
-from tabulate import tabulate
+from typing import Tuple
+
 import click
 import pandas as pd
 from dotenv import find_dotenv, load_dotenv
 from loguru import logger
 from sklearn.model_selection import train_test_split
-from sqlalchemy import (
-    create_engine,
-    Table,
-    Column,
-    Boolean,
-    Text,
-    Numeric,
-    MetaData,
-    Integer,
-)
-from ml.pipelines.utils import DB_CONN_STR, get_pipeline_config, get_table_as_df
+from sqlalchemy import Boolean, Column, MetaData, Numeric, Table, Text, create_engine
 from sqlalchemy.orm import sessionmaker
 from starlette.config import Config
+from tabulate import tabulate
+
+from ml.pipelines.utils import DB_CONN_STR, get_pipeline_config, get_table_as_df
 
 load_dotenv(find_dotenv())
 
 config = Config(".env")
 SHUFFLE_RAW_DATA: bool = config("SHUFFLE_RAW_DATA", cast=bool, default=False)
 USE_DB: bool = config("USE_DB", cast=bool, default=True)
+MIN_TARGET_THRESHOLD: int = config(
+    "MIN_TARGET_THRESHOLD",
+    cast=int,
+    default=0,
+)
 
 
-def raw_data_table() -> (Table, MetaData):
+def raw_data_table() -> Tuple[Table, MetaData]:
+    """
+    Define the raw data table's schema.
+
+    :return Tuple[Table, MetaData]: Table and metadata sqlalchemy objects.
+    """
     metadata = MetaData()
     table = Table(
         "raw_data",
@@ -61,15 +65,27 @@ def raw_data_table() -> (Table, MetaData):
     return table, metadata
 
 
-def init_raw_data_table(db_conn_str: str, input_data_df: pd.DataFrame) -> None:
+def init_raw_data_table(
+    db_conn_str: str,
+    input_data_df: pd.DataFrame,
+) -> None:
+    """
+    Initialize raw_data table. Check if it exists, if it doesn't create it.
+    Then check if it has data, if not, populate with local raw data.
+
+    :param str db_conn_str: A valid connection string
+    :param pd.DataFrame input_data_df: Data to be inserted to the table
+    """
     engine = create_engine(db_conn_str)
     table, metadata = raw_data_table()
+
     logger.info("Creating `raw_data` table if it doesn't exist")
     metadata.create_all(engine)
+
     _session = sessionmaker(engine)
     session = _session()
     query = session.query(table).limit(5)
-    df = pd.read_sql(query.statement, engine)
+    df = pd.read_sql(query.statement, engine)  # Check if table has data
     if df.empty:
         logger.info("Table `raw_data` is empty, inserting data")
         # Insert data if table is empty
@@ -79,7 +95,7 @@ def init_raw_data_table(db_conn_str: str, input_data_df: pd.DataFrame) -> None:
             if_exists="append",
             index=False,
         )
-        df = pd.read_sql(query.statement, engine)
+        df = pd.read_sql(query.statement, engine)  # Query first rows for print
     else:
         logger.info("Table `raw_data` already has data")
     logger.info(
@@ -115,6 +131,9 @@ def pipeline(
     output_test_path = str(
         Path(output_dir, f"{os.getenv('INTERIM_DATA_PREFIX')}_{input_test_file}")
     )
+
+    data = pd.DataFrame()
+    data_test = pd.DataFrame()
     # Load data from db
     if USE_DB:
         try:
@@ -145,17 +164,15 @@ def pipeline(
             err_msg = f"File '{Path(input_dir, input_test_file)}' doesn't exist"
             raise FileNotFoundError(err_msg)
 
-        # Only read if haven't been read earlier, when setting up the db
-        if "data" not in locals():
-            logger.info(f"Reading data from {input_path}")
-            data = pd.read_csv(input_path)
-            if "is_train" in data.columns:
-                data = data.drop("is_train", axis=1)
-        if "data_test" not in locals():
-            logger.info(f"Reading data from {input_test_path}")
-            data_test = pd.read_csv(input_test_path)
-            if "is_train" in data_test.columns:
-                data_test = data_test.drop("is_train", axis=1)
+        logger.info(f"Reading data from {input_path}")
+        data = pd.read_csv(input_path)
+        if "is_train" in data.columns:
+            data = data.drop("is_train", axis=1)
+        logger.info(f"Reading data from {input_test_path}")
+        data_test = pd.read_csv(input_test_path)
+        if "is_train" in data_test.columns:
+            data_test = data_test.drop("is_train", axis=1)
+
     if SHUFFLE_RAW_DATA:
         logger.info(
             """Merging train-test data and shuffling rows to create new split"""
@@ -168,8 +185,7 @@ def pipeline(
     target_col = params["target_col"]
 
     # Drop cols with 0 or less in the target
-    thresh = os.getenv("MIN_TARGET_THRESHOLD", default="0")
-    thresh = int(thresh)
+    thresh = MIN_TARGET_THRESHOLD
     logger.info(
         f"Dropping all rows with target less or equal than {thresh}",
     )

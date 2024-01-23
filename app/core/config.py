@@ -39,7 +39,10 @@ DEBUG: bool = config("DEBUG", cast=bool, default=False)
 PRE_LOAD: bool = config("PRE_LOAD", cast=bool, default=True)
 MAX_CONNECTIONS_COUNT: int = config("MAX_CONNECTIONS_COUNT", cast=int, default=10)
 MIN_CONNECTIONS_COUNT: int = config("MIN_CONNECTIONS_COUNT", cast=int, default=10)
-PROJECT_NAME: str = config("PROJECT_NAME", default="Property friends real estate case")
+PROJECT_NAME: str = config(
+    "PROJECT_NAME",
+    default="Property friends real estate case",
+)
 
 # logging configuration
 LOGGING_LEVEL = logging.DEBUG if DEBUG else logging.INFO
@@ -51,4 +54,10 @@ logger.configure(handlers=[{"sink": sys.stderr, "level": LOGGING_LEVEL}])
 # Get the directory of the current script (the FastAPI app)
 current_dir = os.path.dirname(__file__)
 
-INPUT_EXAMPLE = str(Path(str(os.getenv("ML_DATA_DIR")), "examples", "example.json"))
+INPUT_EXAMPLE = str(
+    Path(
+        str(os.getenv("ML_DATA_DIR")),
+        "examples",
+        "example.json",
+    )
+)

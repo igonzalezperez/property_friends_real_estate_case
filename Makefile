@@ -17,9 +17,37 @@ endif
 
 # Target section and Global definitions
 # -----------------------------------------------------------------------------
-.PHONY: all clean test install run deploy down ci-pipeline
+.PHONY: all clean test install run deploy down ci-pipeline ml-pipeline
 
 all: clean test install run deploy down
+
+ci-pipeline: ci-format ci-lint ci-security
+
+ci-format:
+	poetry run isort . --profile black --check-only
+	poetry run black . --exclude .venv/ --check
+
+ci-lint:
+	poetry run flake8 --config=config/.flake8
+	find . -name '*.py' ! -name '__init__.py' -exec poetry run pylint --rcfile=config/.pylintrc {} \;
+	poetry run mypy --config-file=config/mypy.ini .
+
+ci-security:
+	poetry run bandit -ll -c config/.bandit.yml -r .
+
+ml-pipeline:
+	poetry run python ml/pipelines/luigi_tasks.py
+
+ml-pipeline-base: make-dataset build-features train-model
+
+make-dataset:
+	poetry run python ml/pipelines/make_dataset.py
+
+build-features:
+	poetry run python ml/pipelines/build_features.py
+
+train-model:
+	poetry run python ml/pipelines/train_model.py
 
 test:
 	poetry run pytest tests -vv --show-capture=all
@@ -56,32 +84,3 @@ clean:
 	rm -rf htmlcov
 	rm -rf .tox/
 	rm -rf docs/_build
-
-# 
-ci-format:
-	poetry run isort . --profile black --check-only
-	poetry run black --check . --exclude .venv/
-
-ci-lint:
-	poetry run flake8 --config=config/.flake8
-	find . -name '*.py' ! -name '__init__.py' -exec poetry run pylint --rcfile=config/.pylintrc {} \;
-	poetry run mypy --config-file=config/mypy.ini .
-
-ci-security:
-	poetry run bandit -ll -c config/.bandit.yml -r .
-
-ci-pipeline: ci-format ci-lint ci-security
-
-ml-pipeline:
-	poetry run python ml/pipelines/luigi_tasks.py
-
-make-dataset:
-	poetry run python ml/pipelines/make_dataset.py
-
-build-features:
-	poetry run python ml/pipelines/build_features.py
-
-train-model:
-	poetry run python ml/pipelines/train_model.py
-
-ml-pipeline-base: make-dataset build-features train-model

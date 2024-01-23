@@ -24,6 +24,6 @@ def create_start_app_handler(app: FastAPI):
         try:
             preload_model()
         except FileNotFoundError:
-            pass  # Error log is inside preload_model()
+            pass  # Error logging is inside preload_model()
 
     return start_app

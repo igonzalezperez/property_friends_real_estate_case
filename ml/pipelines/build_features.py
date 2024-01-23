@@ -44,6 +44,9 @@ def pipeline(
     :param str output_data_path: Output data file path
     :param str output_model_path: Output model file path
     """
+    # Define relevant paths
+    input_path = Path(input_dir, input_file)
+    input_test_path = Path(input_dir, input_test_file)
     output_data_path = str(
         Path(
             output_data_dir,
@@ -63,6 +66,7 @@ def pipeline(
         )
     )
     is_test = True
+    # Check if files exist
     if not Path(input_dir, input_file).exists():
         err_msg = f"File '{Path(input_dir, input_file)}' doesn't exist"
         raise FileNotFoundError(err_msg)
@@ -70,18 +74,17 @@ def pipeline(
         err_msg = f"File '{Path(input_dir, input_test_file)}' doesn't exist"
         logger.warning(err_msg)
         is_test = False
+
     logger.info("Load data pipeline config.")
     params = get_pipeline_config()
     logger.info("Start processing data.")
-    input_path = Path(input_dir, input_file)
-    input_test_path = Path(input_dir, input_test_file)
 
     logger.info(f"Reading data from: {input_path}")
     data = pd.read_csv(input_path)
     transformers = []
     feature_cols = []
 
-    # Add col transformers if defined
+    # Add col transformers if defined in config
     if "categorical_transform" in params:
         tr_cat = (
             "categorical",
@@ -105,6 +108,7 @@ def pipeline(
     logger.info(f"Numerical cols: {params['num_cols']}")
     logger.info(f"Target col: {params['target_col']}")
 
+    # Define and fit pipeline
     preprocessor = ColumnTransformer(transformers=transformers)
 
     steps = [("preprocessor", preprocessor)]
@@ -115,17 +119,26 @@ def pipeline(
     )
     logger.info(f"Succesfully fitted pipeline: \n{preproc_pipeline}")
 
+    # Save output
     preproc_data = preproc_pipeline.transform(data[feature_cols])
     preproc_data = pd.DataFrame(preproc_data, columns=feature_cols)
-    preproc_data = pd.concat([preproc_data, data[params["target_col"]]], axis=1)
+    preproc_data = pd.concat(
+        [preproc_data, data[params["target_col"]]],
+        axis=1,
+    )
 
     logger.info(f"Saving preprocessed data to: {output_data_path}")
     preproc_data.to_csv(output_data_path, index=False)
     if is_test:
         logger.info(f"Reading data from: {input_test_path}")
         data_test = pd.read_csv(input_test_path)
-        preproc_test_data = preproc_pipeline.transform(data_test[feature_cols])
-        preproc_test_data = pd.DataFrame(preproc_test_data, columns=feature_cols)
+        preproc_test_data = preproc_pipeline.transform(
+            data_test[feature_cols],
+        )
+        preproc_test_data = pd.DataFrame(
+            preproc_test_data,
+            columns=feature_cols,
+        )
         preproc_test_data = pd.concat(
             [preproc_test_data, data[params["target_col"]]], axis=1
         )

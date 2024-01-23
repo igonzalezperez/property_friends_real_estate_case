@@ -85,10 +85,10 @@ class MakeDataset(luigi.Task):  # type: ignore[misc]
         save it.
         """
         make_dataset.pipeline(
-            input_dir=self.input_dir,
-            input_file=self.input_file,
-            input_test_file=self.input_test_file,
-            output_dir=self.output_dir,
+            input_dir=str(self.input_dir),
+            input_file=str(self.input_file),
+            input_test_file=str(self.input_test_file),
+            output_dir=str(self.output_dir),
         )
 
 
@@ -188,7 +188,7 @@ class TrainModel(luigi.Task):  # type: ignore[misc]
         :return luigi.LocalTarget: Target where output data will be saved
         """
         return luigi.LocalTarget(
-            Path(str(os.getenv("ML_MODELS_DIR")), "trained_model", "MLModel")
+            Path(str(os.getenv("ML_MODELS_DIR")), "trained_model", "model.pkl")
         )
 
     def run(self) -> None:

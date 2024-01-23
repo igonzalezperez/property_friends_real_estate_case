@@ -25,9 +25,9 @@ from joblib import load
 from loguru import logger
 from mlflow.models import infer_signature
 from sklearn.pipeline import Pipeline
+from starlette.config import Config
 
 from ml.pipelines.utils import get_pipeline_config, log_metrics
-from starlette.config import Config
 
 load_dotenv(find_dotenv())
 
@@ -106,11 +106,15 @@ def pipeline(
         mlflow.log_params(params["model_params"])
         data[params["target_col"]] = data[params["target_col"]].astype("float")
         model_pipe.fit(data[params["feature_cols"]], data[params["target_col"]])
+
+        # Get model structure
         signature = infer_signature(
             data[params["feature_cols"]],
             data[params["target_col"]],
             params["model_params"],
         )
+
+        # Save run to mlruns and mlflow.db
         mlflow.sklearn.log_model(
             sk_model=model_pipe,
             artifact_path="model",
@@ -120,8 +124,10 @@ def pipeline(
             str(os.getenv("ML_MODELS_DIR")),
             "trained_model",
         )
-        if os.path.exists(model_path):
+        if os.path.exists(model_path):  # Replace current model with new one
             shutil.rmtree(model_path)
+
+        # Save model artifact (to be used by api)
         mlflow.sklearn.save_model(
             sk_model=model_pipe,
             path=model_path,
@@ -131,6 +137,8 @@ def pipeline(
         preds = model_pipe.predict(
             data[params["feature_cols"]],
         )
+
+        # Store metrics in mlflow.db
         log_metrics(
             params["metrics"],
             data[params["target_col"]].values,

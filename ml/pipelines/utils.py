@@ -12,8 +12,8 @@ from dotenv import find_dotenv, load_dotenv
 from loguru import logger
 from numpy import float64, sqrt
 from numpy.typing import NDArray
-from sqlalchemy import create_engine, text, Table, MetaData
-from sqlalchemy.exc import SQLAlchemyError, NoSuchTableError, OperationalError
+from sqlalchemy import MetaData, Table, create_engine, text
+from sqlalchemy.exc import NoSuchTableError, OperationalError, SQLAlchemyError
 
 load_dotenv(find_dotenv())
 DB_PARAMS = {
@@ -72,7 +72,7 @@ def get_pipeline_config() -> dict[str, Any]:
     feature_cols = [*cat_cols, *num_cols]
     target_col = config["data_catalog"]["columns"]["target"]
 
-    # Import all necessary column transformers
+    # Dynamically import all necessary column transformers
     for k, v in config["model_pipeline"]["preprocessor"]["transformers"].items():
         params[k + "_transform"] = import_from_path(v)
 
@@ -93,7 +93,6 @@ def get_pipeline_config() -> dict[str, Any]:
     params["model"] = model
     params["model_class_path"] = model_class_path
     params["metrics"] = metrics
-
     return params
 
 

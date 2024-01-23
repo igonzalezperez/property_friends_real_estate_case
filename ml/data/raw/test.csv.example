@@ -1,0 +1,6 @@
+type,sector,net_usable_area,net_area,n_rooms,n_bathroom,latitude,longitude,price
+type_2,sector_2,81.0,103.0,2.0,2.0,-33.4098,-70.7414,10200
+type_1,sector_4,530.0,2075.0,4.0,5.0,-33.323,-70.4523,38100
+type_1,sector_2,105.0,212.0,5.0,1.0,-33.484,-70.58,10300
+type_2,sector_1,240.0,295.0,3.0,4.0,-33.4165,-70.5899997,14080
+type_2,sector_3,95.0,101.0,2.0,2.0,-33.429,-70.556,7650
