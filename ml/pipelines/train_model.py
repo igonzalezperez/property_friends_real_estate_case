@@ -27,8 +27,12 @@ from mlflow.models import infer_signature
 from sklearn.pipeline import Pipeline
 
 from ml.pipelines.utils import get_pipeline_config, log_metrics
+from starlette.config import Config
 
 load_dotenv(find_dotenv())
+
+config = Config(".env")
+TEST_PREDICT: bool = config("TEST_PREDICT", cast=bool, default=True)
 
 
 def pipeline(
@@ -134,7 +138,7 @@ def pipeline(
             "train",
         )
         # Test metrics
-        if os.getenv("TEST_PREDICT") and valid_test:
+        if TEST_PREDICT and valid_test:
             logger.info(f"Reading preprocessed TEST data from: {input_path}")
             data_test = pd.read_csv(input_test_path)
             data_test[params["target_col"]] = data_test[params["target_col"]].astype(
@@ -151,7 +155,7 @@ def pipeline(
             )
         logger.debug(os.getenv("MLFLOW_ARTIFACT_ROOT"))
         logger.debug(mlflow.get_artifact_uri())
-    logger.success("Successfully ran TrainModel")
+    logger.success("Successfully ran train_model")
 
 
 @click.command()

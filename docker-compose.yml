@@ -2,6 +2,8 @@ version: "3.8"
 
 services:
   app:
+    image: app:v1
+    container_name: app
     build:
       context: .
       args:
@@ -17,9 +19,12 @@ services:
       - ./Makefile:/real-estate-price-prediction/Makefile
       - ./luigi.toml:/real-estate-price-prediction/luigi.toml
     working_dir: /real-estate-price-prediction
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8080
+    depends_on:
+      - db
   db:
     image: postgres:16
+    container_name: db
     environment:
       POSTGRES_USER: $DB_USER
       POSTGRES_PASSWORD: $DB_PASSWORD
@@ -31,5 +36,4 @@ services:
     volumes:
       - ./ml/data/db:/var/lib/postgresql/data
       - ./ml/data/raw:/real-estate-price-prediction/ml/data/raw
-      - ./ml/pipelines/db_init.sh:/real-estate-price-prediction/ml/pipelines/db_init.sh
     working_dir: /real-estate-price-prediction

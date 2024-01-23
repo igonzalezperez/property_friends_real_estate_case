@@ -15,6 +15,7 @@ router = APIRouter()
 @router.get(
     "/model-runs",
     response_model=list[ModelRuns],
+    responses={403: {"description": "Forbidden"}},
     name="get:model-runs",
     dependencies=[Depends(token_auth_scheme)],
 )

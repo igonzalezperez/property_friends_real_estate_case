@@ -53,6 +53,7 @@ def get_prediction(data_point: pd.DataFrame) -> NDArray[np.float64]:
     "/predict",
     response_model=ModelResponse,
     name="predict:get-inference",
+    responses={403: {"description": "Forbidden"}},
     dependencies=[Depends(token_auth_scheme)],  # api token authentication
 )
 async def predict(
@@ -76,6 +77,7 @@ async def predict(
     - `HTTPException 400`: If the 'data_input' argument is invalid.
     - `HTTPException 503`: If the model artifact doesn't exist or is
     unavailable.
+    - `HTTPException 403`: If authentication fails (Forbidden).
     """
     if not data_input:
         raise HTTPException(
@@ -98,6 +100,7 @@ async def predict(
 @router.get(
     "/health",
     response_model=HealthResponse,
+    responses={403: {"description": "Forbidden"}},
     name="health:get-data",
     dependencies=[Depends(token_auth_scheme)],  # api token authentication
 )
@@ -135,6 +138,7 @@ async def health() -> HealthResponse:
 @log_router.get(
     "/predict-logs",
     response_model=list[PredictLogEntry],
+    responses={403: {"description": "Forbidden"}},
     name="predict-logs:get-data",
     dependencies=[Depends(token_auth_scheme)],  # api token authentication
 )

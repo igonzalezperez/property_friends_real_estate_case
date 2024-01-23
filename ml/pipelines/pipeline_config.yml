@@ -17,7 +17,7 @@ model_pipeline:
   preprocessor:
     transformers:
       categorical: category_encoders.TargetEncoder
-      numerical: sklearn.preprocessing.StandardScaler
+      # numerical: sklearn.preprocessing.StandardScaler
 
   model:
     type: sklearn.ensemble.GradientBoostingRegressor

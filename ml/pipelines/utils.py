@@ -12,8 +12,8 @@ from dotenv import find_dotenv, load_dotenv
 from loguru import logger
 from numpy import float64, sqrt
 from numpy.typing import NDArray
-from sqlalchemy import create_engine
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy import create_engine, text, Table, MetaData
+from sqlalchemy.exc import SQLAlchemyError, NoSuchTableError, OperationalError
 
 load_dotenv(find_dotenv())
 DB_PARAMS = {
@@ -72,35 +72,28 @@ def get_pipeline_config() -> dict[str, Any]:
     feature_cols = [*cat_cols, *num_cols]
     target_col = config["data_catalog"]["columns"]["target"]
 
-    cat_transform_path = config["model_pipeline"]["preprocessor"]["transformers"][
-        "categorical"
-    ]
-    num_transform_path = config["model_pipeline"]["preprocessor"]["transformers"][
-        "numerical"
-    ]
+    # Import all necessary column transformers
+    for k, v in config["model_pipeline"]["preprocessor"]["transformers"].items():
+        params[k + "_transform"] = import_from_path(v)
+
     model_class_path = config["model_pipeline"]["model"]["type"]
     model_params = config["model_pipeline"]["model"]["parameters"]
 
     metrics_paths = config["model_pipeline"]["metrics"]
 
-    cat_transform = import_from_path(cat_transform_path)
-    num_transform = import_from_path(num_transform_path)
     model = import_from_path(model_class_path)
 
     metrics = [import_from_path(i) for i in metrics_paths]
 
-    params = {
-        "num_cols": num_cols,
-        "cat_cols": cat_cols,
-        "feature_cols": feature_cols,
-        "target_col": target_col,
-        "cat_transform": cat_transform,
-        "num_transform": num_transform,
-        "model_params": model_params,
-        "model": model,
-        "model_class_path": model_class_path,
-        "metrics": metrics,
-    }
+    params["num_cols"] = num_cols
+    params["cat_cols"] = cat_cols
+    params["feature_cols"] = feature_cols
+    params["target_col"] = target_col
+    params["model_params"] = model_params
+    params["model"] = model
+    params["model_class_path"] = model_class_path
+    params["metrics"] = metrics
+
     return params
 
 
@@ -156,3 +149,64 @@ def get_table_as_df(db_conn_str: str, table_name: str) -> pd.DataFrame:
     except SQLAlchemyError as e:
         logger.error(f"Database connection error: {e}")
         raise
+
+
+def reset_raw_data_table(db_conn_str: str) -> None:
+    """
+    Deletes all records from the 'raw_data' table in the database.
+    Useful for testing purposes.
+
+    :param db_conn_str: A string representing the database connection string.
+                        The format of this string should be appropriate for
+                        the specific type of database you are connecting to.
+                        For example, for a PostgreSQL database, it should
+                        be in the format:
+                        'postgresql://username:password@host:port/dbname'
+    """
+    # Create an engine
+    engine = create_engine(db_conn_str)
+
+    # SQL command to delete all records from the table
+    sql = text("DELETE FROM raw_data")
+
+    # Connect to the database and execute the command
+    with engine.connect() as conn:
+        conn.execute(sql)
+        # Commit the transaction if needed
+        conn.commit()
+
+    logger.info("All records from 'raw_data' table have been deleted.")
+
+
+def drop_raw_data_table(db_conn_str: str) -> None:
+    """
+    Drop raw_data table. Useful for testing purposes
+    Useful for testing purposes.
+
+    :param db_conn_str: A string representing the database connection string.
+                        The format of this string should be appropriate for
+                        the specific type of database you are connecting to.
+                        For example, for a PostgreSQL database, it should
+                        be in the format:
+                        'postgresql://username:password@host:port/dbname'
+    """
+    try:
+        # Create an engine
+        engine = create_engine(db_conn_str)
+
+        # Create a MetaData instance
+        metadata = MetaData()
+
+        # Reflect the table from the database
+        table = Table("raw_data", metadata, autoload_with=engine)
+
+        # Drop the table
+        table.drop(engine, checkfirst=True)
+        logger.info("Dropped table `raw_data`")
+    except NoSuchTableError:
+        logger.error("Table 'raw_data' does not exist and cannot be dropped.")
+    except OperationalError as e:
+        logger.error(
+            f"""Operation error: {e}. Please check your database connection
+              string and ensure the database server is accessible."""
+        )

@@ -3,6 +3,7 @@ Utility for Saving Data to Text File
 """
 import datetime
 import json
+import os
 from typing import Any
 
 import numpy as np
@@ -21,6 +22,7 @@ def save_to_json(
     :param pd.DataFrame data_input: The input data to be saved.
     :param NDArray[np.float64] result: The result data to be saved.
     """
+    os.makedirs("app/logs", exist_ok=True)
     file_path = "app/logs/model_predictions.json"
     new_data = {
         "input": data_input.to_dict(orient="records"),

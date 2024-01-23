@@ -70,7 +70,7 @@ class ModelHandlerScore:
         path = Path(os.getenv("ML_MODELS_DIR"), "trained_model", "model.pkl")
         if not path.exists():
             message = f"Machine learning model at {path} doesn't exist"
-            logger.error(message)
+            logger.warning(message)
             raise FileNotFoundError(message)
 
         try:

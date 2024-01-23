@@ -78,38 +78,45 @@ def pipeline(
 
     logger.info(f"Reading data from: {input_path}")
     data = pd.read_csv(input_path)
+    transformers = []
+    feature_cols = []
+
+    # Add col transformers if defined
+    if "categorical_transform" in params:
+        tr_cat = (
+            "categorical",
+            params["categorical_transform"](),
+            params["cat_cols"],
+        )
+        transformers.append(tr_cat)
+        feature_cols.extend(params["cat_cols"])
+    if "numerical_transform" in params:
+        tr_num = (
+            "numerical",
+            params["numerical_transform"](),
+            params["num_cols"],
+        )
+        transformers.append(tr_num)
+        feature_cols.extend(params["num_cols"])
 
     logger.info(f"Data cols: {data.columns.tolist()}")
-    logger.info(f"Feature cols: {params['feature_cols']}")
+    logger.info(f"Feature cols: {feature_cols}")
     logger.info(f"Categorical cols: {params['cat_cols']}")
     logger.info(f"Numerical cols: {params['num_cols']}")
     logger.info(f"Target col: {params['target_col']}")
 
-    preprocessor = ColumnTransformer(
-        transformers=[
-            (
-                "categorical",
-                params["cat_transform"](),
-                params["cat_cols"],
-            ),
-            (
-                "numerical",
-                params["num_transform"](),
-                params["num_cols"],
-            ),
-        ]
-    )
+    preprocessor = ColumnTransformer(transformers=transformers)
 
     steps = [("preprocessor", preprocessor)]
     logger.info("Fitting preprocessing pipeline")
     preproc_pipeline = Pipeline(steps).fit(
-        data[params["feature_cols"]],
+        data[feature_cols],
         data[params["target_col"]],
     )
     logger.info(f"Succesfully fitted pipeline: \n{preproc_pipeline}")
 
-    preproc_data = preproc_pipeline.transform(data[params["feature_cols"]])
-    preproc_data = pd.DataFrame(preproc_data, columns=params["feature_cols"])
+    preproc_data = preproc_pipeline.transform(data[feature_cols])
+    preproc_data = pd.DataFrame(preproc_data, columns=feature_cols)
     preproc_data = pd.concat([preproc_data, data[params["target_col"]]], axis=1)
 
     logger.info(f"Saving preprocessed data to: {output_data_path}")
@@ -117,12 +124,8 @@ def pipeline(
     if is_test:
         logger.info(f"Reading data from: {input_test_path}")
         data_test = pd.read_csv(input_test_path)
-        preproc_test_data = preproc_pipeline.transform(
-            data_test[params["feature_cols"]]
-        )
-        preproc_test_data = pd.DataFrame(
-            preproc_test_data, columns=params["feature_cols"]
-        )
+        preproc_test_data = preproc_pipeline.transform(data_test[feature_cols])
+        preproc_test_data = pd.DataFrame(preproc_test_data, columns=feature_cols)
         preproc_test_data = pd.concat(
             [preproc_test_data, data[params["target_col"]]], axis=1
         )
@@ -132,7 +135,7 @@ def pipeline(
     logger.info(f"Saving preprocessing pipeline to: {output_model_path}")
     dump(preproc_pipeline, output_model_path)
 
-    logger.success("Successfully ran BuildFeatures")
+    logger.success("Successfully ran build_features")
 
 
 @click.command()
