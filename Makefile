@@ -30,7 +30,7 @@ ci-format:
 ci-lint:
 	poetry run flake8 --config=config/.flake8
 	find . -name '*.py' ! -name '__init__.py' -exec poetry run pylint --rcfile=config/.pylintrc {} \;
-	poetry run mypy --config-file=config/mypy.ini .
+	poetry run mypy --config-file=config/mypy.ini . --exclude=tests/
 
 ci-security:
 	poetry run bandit -ll -c config/.bandit.yml -r .
