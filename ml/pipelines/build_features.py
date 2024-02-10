@@ -12,6 +12,7 @@ Usage:
     [INPUT_FILE] [INPUT_TEST_FILE] [OUTPUT_DATA_DIR] [OUTPUT_MODEL_DIR]
     ```
 """
+
 import os
 from pathlib import Path
 

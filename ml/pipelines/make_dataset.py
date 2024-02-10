@@ -13,6 +13,7 @@ Usage:
     [INPUT_FILE] [INPUT_TEST_FILE] [OUTPUT_DIR]
     ```
 """
+
 import os
 from pathlib import Path
 from typing import Tuple

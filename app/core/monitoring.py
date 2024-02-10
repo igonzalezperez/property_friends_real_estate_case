@@ -1,6 +1,7 @@
 """
 Utility for Saving Data to Text File
 """
+
 import datetime
 import json
 import os
@@ -26,7 +27,7 @@ def save_to_json(
     file_path = "app/logs/model_predictions.json"
     new_data = {
         "input": data_input.to_dict(orient="records"),
-        "result": result[0],
+        "result": result,
         "date": f"{datetime.datetime.now():%Y-%m-%d %H:%M:%S.%f}",
     }
     try:

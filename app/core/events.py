@@ -1,6 +1,7 @@
 """
 Module for handling model preloading and startup handling in FastAPI.
 """
+
 import typing
 from pickle import load
 

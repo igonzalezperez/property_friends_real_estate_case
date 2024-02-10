@@ -2,6 +2,7 @@
 This module defines the ModelHandlerScore class for handling machine learning
 models.
 """
+
 import os
 import typing
 from pathlib import Path

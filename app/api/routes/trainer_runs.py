@@ -5,6 +5,7 @@ It includes the following routes:
 - `/model-runs`: Gets the logs of all model training runs registered by
 MLFlow
 """
+
 from pathlib import Path
 from typing import Any
 

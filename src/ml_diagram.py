@@ -1,6 +1,7 @@
 """
 Generate diagram of the Project
 """
+
 from pathlib import Path
 
 from diagrams import Cluster, Diagram, Edge

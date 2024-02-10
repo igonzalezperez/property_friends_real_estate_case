@@ -16,6 +16,7 @@ Usage:
 To run the pipeline, execute this module run:
     (poetry run) python ml/pipelines/luigi_tasks.py
 """
+
 import os
 from pathlib import Path
 

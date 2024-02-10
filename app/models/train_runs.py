@@ -2,6 +2,7 @@
 This module defines the data model used for MLFlow experiments created during
 model training.
 """
+
 import datetime
 from typing import Optional
 

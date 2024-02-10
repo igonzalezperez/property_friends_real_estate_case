@@ -8,15 +8,14 @@ It includes the following routes:
 - `/predict-logs`: Gets the last calls of /predict, including request body,
 response and date of request.
 """
+
 import datetime
 import json
 import typing
 from pickle import load
 
-import numpy as np
 import pandas as pd
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
-from numpy.typing import NDArray
 
 from app.core.config import INPUT_EXAMPLE
 from app.core.errors import PredictException
@@ -35,20 +34,19 @@ log_router = APIRouter()
 
 
 @typing.no_type_check
-def get_prediction(data_point: pd.DataFrame) -> NDArray[np.float64]:
+def get_prediction(data_point: pd.DataFrame) -> float:
     """
     Get predictions for the input data point. It performs a .predict() on
     a loaded model artifact, like an sklearn model or pipeline.
 
     :param pd.DataFrame data_point: The input data point for prediction.
-    :return NDArray[np.float64]: Predicted value as an array of type
-    np.float64.
+    :return float: Predicted float value
     """
     return model.predict(
         data_point,
         load_wrapper=load,
         method="predict",
-    )
+    )[0]
 
 
 @router.post(

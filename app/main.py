@@ -1,6 +1,7 @@
 """
 Main FastAPI Application Configuration
 """
+
 from fastapi import FastAPI
 
 from app.api.routes.api import router as api_router
