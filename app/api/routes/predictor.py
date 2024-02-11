@@ -127,10 +127,10 @@ async def health() -> HealthResponse:
     - `HTTPException 503`: If the health check fails.
     """
     is_health = False
+    with open(INPUT_EXAMPLE, "r", encoding="utf-8") as stream:
+        example = json.load(stream)
+        test_input = ModelInput(**example)
     try:
-        with open(INPUT_EXAMPLE, "r", encoding="utf-8") as stream:
-            example = json.load(stream)
-            test_input = ModelInput(**example)
         test_point = test_input.get_df()
         get_prediction(test_point)
         is_health = True

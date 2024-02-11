@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 from unittest.mock import patch
 
@@ -47,12 +48,11 @@ def test_predict_invalid_input():
 def test_predict_unauthorized():
     response = CLIENT.post(ENDPOINT, json=SAMPLE_INPUT)  # No token provided
     assert response.status_code == 403
+    assert response.json() == {"detail": "Not authenticated"}
 
 
 # Model not available
 def test_predict_model_unavailable():
-    import os
-
     os.environ["ML_MODELS_DIR"] = "fake_dir"
     response = CLIENT.post(ENDPOINT, json=SAMPLE_INPUT, headers=HEADERS)
     assert response.status_code == 503

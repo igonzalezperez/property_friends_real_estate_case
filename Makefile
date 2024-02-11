@@ -27,6 +27,9 @@ ci-format:
 	poetry run isort . --profile black --check-only
 	poetry run black . --exclude .venv/ --check
 
+# pylint windows version
+# Get-ChildItem -Recurse -Filter "*.py" | Where-Object { $_.Name -ne "__init__.py" -and $_.DirectoryName -notmatch "\\.venv" } | ForEach-Object { poetry run pylint --rcfile=config/.pylintrc $_.FullName }
+
 ci-lint:
 	poetry run flake8 --config=config/.flake8
 	find . -name '*.py' ! -name '__init__.py' -exec poetry run pylint --rcfile=config/.pylintrc {} \;

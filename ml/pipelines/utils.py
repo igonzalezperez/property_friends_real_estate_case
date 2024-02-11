@@ -25,7 +25,12 @@ DB_PARAMS = {
     "port": "5432",
 }
 
-DB_CONN_STR = f'postgresql://{DB_PARAMS["user"]}:{DB_PARAMS["password"]}@{DB_PARAMS["host"]}:{DB_PARAMS["port"]}/{DB_PARAMS["dbname"]}'
+DB_CONN_STR = (
+    f'postgresql://{DB_PARAMS["user"]}'
+    f':{DB_PARAMS["password"]}@{DB_PARAMS["host"]}'
+    f':{DB_PARAMS["port"]}/{DB_PARAMS["dbname"]}'
+)
+
 
 # type hint for metric functions
 MetricFunction = Callable[[NDArray[float64], NDArray[float64]], float]
