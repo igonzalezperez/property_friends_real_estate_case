@@ -65,7 +65,8 @@ def read_log_entries(
         loc = "app/logs/model_predictions.json"
         with open(loc, "r", encoding="utf-8") as log_file:
             log_data = json.load(log_file)
+        limit = max(1, min(limit, len(log_data)))
         log_data.reverse()
-        return log_data[: min(limit, len(log_data))]  # type: ignore
+        return log_data[:limit]  # type: ignore
     except FileNotFoundError:
         return []
